@@ -319,10 +319,12 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
     </div>
     <div class="login-input-wrap">
       <span class="login-input-icon">🔐</span>
-      <input id="pin-input" class="login-input" type="password" inputmode="numeric"
+      <input id="pin-input" class="login-input" type="password"
+             inputmode="text" autocomplete="current-password"
              maxlength="20" placeholder="Masukkan PIN"
-             onkeydown="if(event.key==='Enter') doLogin()" />
+             onkeyup="if(event.key==='Enter') doLogin()" />
     </div>
+
     <button class="login-btn" id="login-btn" onclick="doLogin()">Masuk</button>
     <div class="login-err" id="login-err"></div>
     <div class="login-version">v2.0.0 · Autentikasi Server-Side Aman</div>
