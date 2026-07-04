@@ -488,8 +488,12 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(updateHeaderDate, 60000);
 
   if (SESSION_TOKEN && USER_ROLE) {
-    // Validasi session yang tersimpan
-    apiPostPublic({ action: 'validate_session', sessionToken: SESSION_TOKEN })
+    // Validasi session yang tersimpan — timeout 8 detik
+    const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
+    Promise.race([
+      apiPostPublic({ action: 'validate_session', sessionToken: SESSION_TOKEN }),
+      timeoutPromise
+    ])
       .then(res => {
         if (res.valid) {
           document.getElementById('login-screen').style.display = 'none';
@@ -503,10 +507,13 @@ window.addEventListener('DOMContentLoaded', () => {
           document.getElementById('pin-input').focus();
         }
       }).catch(() => {
-        // Jika server tidak bisa dihubungi, paksa login ulang
+        // Jika server tidak bisa dihubungi atau timeout → paksa login ulang
         sessionStorage.clear();
+        SESSION_TOKEN = null;
+        USER_ROLE     = null;
         document.getElementById('pin-input').focus();
       });
+
   } else {
     document.getElementById('pin-input').focus();
   }
@@ -2818,10 +2825,26 @@ async function apiPost(payload) {
 
 async function apiPostPublic(payload) {
   // Untuk login/validate_session — tanpa sessionToken
-  const body = JSON.stringify(payload);
-  const res  = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
-  const text = await res.text();
-  return JSON.parse(text);
+  // Timeout 15 detik agar tidak freeze
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 15000);
+  try {
+    const body = JSON.stringify(payload);
+    const res  = await fetch(API, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body,
+      signal: controller.signal
+    });
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Koneksi timeout (>15 detik). Periksa internet atau coba lagi.');
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function exportToExcel(data, filename) {
