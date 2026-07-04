@@ -2144,7 +2144,7 @@ async function readExcel(file) {
     reader.onload = e => {
       const wb = XLSX.read(e.target.result, { type: 'binary' });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      resolve(XLSX.utils.sheet_to_json(ws));
+      resolve(XLSX.utils.sheet_to_json(ws, { defval: '', raw: false }));
     };
     reader.onerror = reject;
     reader.readAsBinaryString(file);
