@@ -605,6 +605,7 @@ function navigate(page) {
   if (activeNav) activeNav.classList.add('active');
   document.getElementById('sidebar').classList.remove('open');
 
+  switch (page) {
     case 'home':           renderHome();          break;
     case 'absen-siswa':    renderAbsenSiswa();    break;
     case 'absen-guru':     renderAbsenGuru();     break;
@@ -620,6 +621,7 @@ function navigate(page) {
     case 'panduan-admin':  renderPanduan();       break;
   }
 }
+
 
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
