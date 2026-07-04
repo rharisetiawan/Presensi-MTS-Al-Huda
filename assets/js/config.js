@@ -6,7 +6,7 @@
 const APP_CONFIG = {
   // ── WAJIB DIISI setelah deploy Google Apps Script ──
   // Dapatkan URL dari: Apps Script → Deploy → Manage Deployments
-  API_URL: 'https://script.google.com/macros/s/AKfycbwbyAmb5ckFlydwJs34DcfbI21gvv9vzdtI5SFFd5n6CMkKeDnvJIPk81EzzERuvnZ98w/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbz20Df5FlXziAbfVbTPmiNx4d-LSju7gYNV_93KWhhRWSNYHy6Pe00B-eum9pc0erT4Dg/exec',
 
   // ── Informasi Sekolah ──
   SCHOOL_NAME:     'MTS Al Huda Putri Malang',
