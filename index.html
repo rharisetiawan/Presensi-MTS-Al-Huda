@@ -11,321 +11,189 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="../assets/js/config.js"></script>
-
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --primary:    #10b981;
-  --primary-dk: #059669;
-  --primary-lt: rgba(16,185,129,0.12);
-  --warn:       #f59e0b;
-  --warn-lt:    rgba(245,158,11,0.12);
-  --danger:     #ef4444;
-  --danger-lt:  rgba(239,68,68,0.12);
-  --info:       #3b82f6;
-  --info-lt:    rgba(59,130,246,0.12);
-  --purple:     #8b5cf6;
-  --bg:         #0a1628;
-  --bg2:        #0d1f38;
-  --surface:    #111f38;
-  --surface2:   #1a2e4a;
-  --surface3:   #213654;
-  --text:       #f1f5f9;
-  --text-2:     #cbd5e1;
-  --text-muted: #64748b;
-  --border:     rgba(255,255,255,0.07);
-  --border2:    rgba(255,255,255,0.12);
-  --sidebar-w:  240px;
-  --header-h:   60px;
-  --radius:     12px;
-  --radius-lg:  18px;
+  --primary:    #10b981; --primary-dk: #059669; --primary-lt: rgba(16,185,129,0.12);
+  --warn:       #f59e0b; --warn-lt:    rgba(245,158,11,0.12);
+  --danger:     #ef4444; --danger-lt:  rgba(239,68,68,0.12);
+  --info:       #3b82f6; --info-lt:    rgba(59,130,246,0.12);
+  --purple:     #8b5cf6; --purple-lt:  rgba(139,92,246,0.12);
+  --bg:         #0a1628; --bg2: #0d1f38;
+  --surface:    #111f38; --surface2: #1a2e4a; --surface3: #213654;
+  --text:       #f1f5f9; --text-2: #cbd5e1; --text-muted: #64748b;
+  --border:     rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --sidebar-w:  240px; --header-h: 60px;
+  --radius: 12px; --radius-lg: 18px;
 }
-
 html, body { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
 
-/* ── LOGIN ─────────────────────────────────────────────── */
-#login-screen {
-  position: fixed; inset: 0; z-index: 999;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-}
-.login-box {
-  width: 100%; max-width: 380px;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  padding: 40px 36px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-}
-.login-logo { font-size: 44px; text-align: center; margin-bottom: 8px; }
-.login-title { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+/* ── LOGIN ── */
+#login-screen { position: fixed; inset: 0; z-index: 999; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.login-box { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 44px 40px; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
+.login-logo { font-size: 48px; text-align: center; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.login-title { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 4px; background: linear-gradient(135deg, var(--primary), #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .login-sub { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 32px; }
-.login-input-wrap { position: relative; margin-bottom: 16px; }
-.login-input {
-  width: 100%; background: var(--surface2);
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 13px 16px 13px 44px;
-  font-size: 15px; font-family: inherit; color: var(--text);
-  outline: none; transition: border-color 0.2s;
-  letter-spacing: 0.25em;
-}
+.login-role-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+.role-tab { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--border); background: none; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.role-tab.active { background: var(--primary-lt); border-color: var(--primary); color: var(--primary); }
+.login-input-wrap { position: relative; margin-bottom: 14px; }
+.login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px 13px 44px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; letter-spacing: 0.2em; }
 .login-input:focus { border-color: var(--primary); }
-.login-input-icon {
-  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-  font-size: 18px; pointer-events: none;
-}
-.login-btn {
-  width: 100%; background: var(--primary);
-  border: none; border-radius: 10px; padding: 14px;
-  font-size: 15px; font-weight: 700; font-family: inherit;
-  color: #fff; cursor: pointer; transition: all 0.2s;
-  margin-top: 8px;
-}
-.login-btn:hover { background: var(--primary-dk); transform: translateY(-1px); }
-.login-btn:active { transform: translateY(0); }
-.login-err { color: var(--danger); font-size: 12px; text-align: center; margin-top: 8px; min-height: 20px; }
+.login-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; pointer-events: none; }
+.login-btn { width: 100%; background: linear-gradient(135deg, var(--primary), #059669); border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; font-family: inherit; color: #fff; cursor: pointer; transition: all 0.2s; margin-top: 6px; }
+.login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.35); }
+.login-err { color: var(--danger); font-size: 12px; text-align: center; margin-top: 10px; min-height: 20px; }
+.login-version { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 20px; }
 
-/* ── APP SHELL ─────────────────────────────────────────── */
-#app {
-  display: none; height: 100vh; overflow: hidden;
-  flex-direction: column;
-}
-
-/* Header */
-.app-header {
-  height: var(--header-h); background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center;
-  padding: 0 20px 0 16px;
-  gap: 12px; flex-shrink: 0; z-index: 50;
-}
-.header-menu-btn {
-  background: none; border: none; cursor: pointer;
-  padding: 6px; border-radius: 8px; color: var(--text);
-  font-size: 20px; display: none;
-  transition: background 0.2s;
-}
+/* ── APP SHELL ── */
+#app { display: none; height: 100vh; overflow: hidden; flex-direction: column; }
+.app-header { height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px 0 16px; gap: 12px; flex-shrink: 0; z-index: 50; }
+.header-menu-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--text); font-size: 20px; display: none; transition: background 0.2s; }
 .header-menu-btn:hover { background: var(--surface2); }
-.header-logo-text {
-  font-size: 17px; font-weight: 800; flex: 1;
-  background: linear-gradient(135deg, var(--primary), #34d399);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
+.header-logo-text { font-size: 17px; font-weight: 800; flex: 1; background: linear-gradient(135deg, var(--primary), #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .header-right { display: flex; align-items: center; gap: 10px; }
 .header-date { font-size: 13px; color: var(--text-muted); }
-.header-user-chip {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 100px; padding: 6px 14px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: background 0.2s;
-}
+.header-role-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
+.role-TU     { background: var(--primary-lt); color: var(--primary); }
+.role-KEPSEK { background: var(--info-lt);    color: var(--info); }
+.role-WALI   { background: var(--purple-lt);  color: var(--purple); }
+.header-user-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
 .header-user-chip:hover { background: var(--surface3); }
 
-/* Body */
 .app-body { display: flex; flex: 1; overflow: hidden; }
 
-/* Sidebar */
-.sidebar {
-  width: var(--sidebar-w); background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
-  transition: transform 0.3s ease;
-}
-.sidebar-section-label {
-  font-size: 10px; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  padding: 18px 16px 6px;
-}
-.nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; margin: 1px 8px;
-  border-radius: 10px; cursor: pointer;
-  font-size: 14px; font-weight: 500; color: var(--text-2);
-  transition: all 0.15s; text-decoration: none;
-}
+/* ── SIDEBAR ── */
+.sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; overflow-x: hidden; transition: transform 0.3s ease; }
+.sidebar-section-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 18px 16px 6px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; margin: 1px 8px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-2); transition: all 0.15s; text-decoration: none; user-select: none; }
 .nav-item:hover { background: var(--surface2); color: var(--text); }
 .nav-item.active { background: var(--primary-lt); color: var(--primary); font-weight: 700; }
-.nav-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
-.sidebar-bottom { margin-top: auto; padding: 16px 8px; }
-
-/* Content */
+.nav-item.hidden { display: none !important; }
+.nav-icon { font-size: 17px; width: 24px; text-align: center; flex-shrink: 0; }
+.sidebar-bottom { margin-top: auto; padding: 16px 8px; border-top: 1px solid var(--border); }
 .content { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg2); }
 
-/* ── CARDS & GRIDS ─────────────────────────────────────── */
+/* ── STAT GRID ── */
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.stat-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px;
-  display: flex; align-items: center; gap: 16px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 16px; transition: transform 0.2s, box-shadow 0.2s; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-.stat-icon {
-  width: 48px; height: 48px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; flex-shrink: 0;
-}
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .stat-body { flex: 1; min-width: 0; }
 .stat-num { font-size: 28px; font-weight: 800; line-height: 1; }
 .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.stat-badge {
-  font-size: 12px; font-weight: 700; padding: 3px 8px;
-  border-radius: 100px;
-}
-
-.green-card .stat-icon  { background: var(--primary-lt); }
-.yellow-card .stat-icon { background: var(--warn-lt); }
-.red-card .stat-icon    { background: var(--danger-lt); }
-.blue-card .stat-icon   { background: var(--info-lt); }
-.green-card  .stat-num  { color: var(--primary); }
-.yellow-card .stat-num  { color: var(--warn); }
-.red-card .stat-num     { color: var(--danger); }
-.blue-card .stat-num    { color: var(--info); }
-
-/* Page header */
-.page-header { margin-bottom: 24px; }
-.page-title { font-size: 22px; font-weight: 800; }
-.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-
-/* Card */
-.card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); overflow: hidden;
-}
-.card-header {
-  padding: 16px 20px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-}
-.card-title { font-size: 15px; font-weight: 700; }
-.card-body { padding: 20px; }
-
-/* Table */
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th {
-  padding: 10px 14px; text-align: left;
-  background: var(--surface2); color: var(--text-muted);
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.05em; white-space: nowrap;
-}
-thead th:first-child { border-radius: 8px 0 0 8px; }
-thead th:last-child  { border-radius: 0 8px 8px 0; }
-tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: var(--surface2); }
-tbody td { padding: 11px 14px; vertical-align: middle; }
-.td-name { font-weight: 600; }
-.td-muted { color: var(--text-muted); }
-
-/* Status badges */
-.badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 100px;
-  font-size: 11px; font-weight: 700; white-space: nowrap;
-}
-.badge-hadir     { background: var(--primary-lt); color: var(--primary); }
-.badge-terlambat { background: var(--warn-lt);    color: var(--warn); }
-.badge-alpa      { background: var(--danger-lt);  color: var(--danger); }
-.badge-izin      { background: var(--info-lt);    color: var(--info); }
-.badge-sakit     { background: rgba(139,92,246,0.15); color: var(--purple); }
-.badge-belum     { background: var(--surface2); color: var(--text-muted); }
-.badge-pulang    { background: rgba(34,197,94,0.1); color: #22c55e; }
-
-/* Buttons */
-.btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 8px;
-  font-size: 13px; font-weight: 600; font-family: inherit;
-  border: none; cursor: pointer; transition: all 0.15s;
-  text-decoration: none;
-}
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-dk); }
-.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: var(--surface3); }
-.btn-danger { background: var(--danger-lt); color: var(--danger); }
-.btn-danger:hover { background: var(--danger); color: #fff; }
-.btn-warn { background: var(--warn-lt); color: var(--warn); }
-.btn-warn:hover { background: var(--warn); color: #000; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-icon { padding: 7px; border-radius: 8px; }
-
-/* Filter bar */
-.filter-bar {
-  display: flex; gap: 10px; align-items: center;
-  flex-wrap: wrap; margin-bottom: 16px;
-}
-.filter-select, .filter-input {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 8px; padding: 8px 12px;
-  font-size: 13px; font-family: inherit; color: var(--text);
-  outline: none; transition: border-color 0.2s;
-}
-.filter-select:focus, .filter-input:focus { border-color: var(--primary); }
-.filter-input { flex: 1; min-width: 180px; }
-
-/* Two column grid */
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-
-/* Chart container */
-.chart-wrap { position: relative; height: 220px; }
-
-/* Progress bar mini */
+.green-card  .stat-icon { background: var(--primary-lt); } .green-card  .stat-num { color: var(--primary); }
+.yellow-card .stat-icon { background: var(--warn-lt); }    .yellow-card .stat-num { color: var(--warn); }
+.red-card    .stat-icon { background: var(--danger-lt); }  .red-card    .stat-num { color: var(--danger); }
+.blue-card   .stat-icon { background: var(--info-lt); }    .blue-card   .stat-num { color: var(--info); }
+.purple-card .stat-icon { background: var(--purple-lt); }  .purple-card .stat-num { color: var(--purple); }
 .mini-progress { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .mini-bar-wrap { flex: 1; background: var(--surface2); border-radius: 100px; height: 6px; overflow: hidden; }
 .mini-bar { height: 100%; border-radius: 100px; transition: width 0.8s ease; }
 .mini-pct { font-size: 12px; font-weight: 700; min-width: 36px; text-align: right; }
 
-/* Modal */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.3s;
-}
+/* ── PAGE HEADER ── */
+.page-header { margin-bottom: 24px; }
+.page-title { font-size: 22px; font-weight: 800; }
+.page-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── CARD ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.card-title { font-size: 15px; font-weight: 700; }
+.card-body { padding: 20px; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { padding: 10px 14px; text-align: left; background: var(--surface2); color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+thead th:first-child { border-radius: 8px 0 0 8px; } thead th:last-child { border-radius: 0 8px 8px 0; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 11px 14px; vertical-align: middle; }
+.td-name { font-weight: 600; } .td-muted { color: var(--text-muted); }
+
+/* ── BADGE ── */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-hadir     { background: var(--primary-lt); color: var(--primary); }
+.badge-terlambat { background: var(--warn-lt);    color: var(--warn); }
+.badge-alpa      { background: var(--danger-lt);  color: var(--danger); }
+.badge-izin      { background: var(--info-lt);    color: var(--info); }
+.badge-sakit     { background: var(--purple-lt);  color: var(--purple); }
+.badge-belum     { background: var(--surface2);   color: var(--text-muted); }
+.badge-aktif     { background: var(--primary-lt); color: var(--primary); }
+.badge-lulus     { background: var(--info-lt);    color: var(--info); }
+.badge-pindah    { background: var(--warn-lt);    color: var(--warn); }
+.badge-do        { background: var(--danger-lt);  color: var(--danger); }
+.badge-nonaktif  { background: var(--surface2);   color: var(--text-muted); }
+
+/* ── BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: inherit; border: none; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+.btn-primary   { background: var(--primary); color: #fff; }   .btn-primary:hover   { background: var(--primary-dk); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); } .btn-secondary:hover { background: var(--surface3); }
+.btn-danger    { background: var(--danger-lt); color: var(--danger); } .btn-danger:hover  { background: var(--danger); color: #fff; }
+.btn-warn      { background: var(--warn-lt); color: var(--warn); }    .btn-warn:hover    { background: var(--warn); color: #000; }
+.btn-info      { background: var(--info-lt); color: var(--info); }    .btn-info:hover    { background: var(--info); color: #fff; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* ── FILTER BAR ── */
+.filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-select, .filter-input { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; }
+.filter-select:focus, .filter-input:focus { border-color: var(--primary); }
+.filter-input { flex: 1; min-width: 180px; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .modal-overlay.show { opacity: 1; pointer-events: all; }
-.modal {
-  background: var(--surface); border: 1px solid var(--border2);
-  border-radius: var(--radius-lg); padding: 28px;
-  width: 100%; max-width: 440px; max-height: 85vh; overflow-y: auto;
-  transform: scale(0.95) translateY(10px);
-  transition: transform 0.3s;
-}
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; transform: scale(0.95) translateY(10px); transition: transform 0.3s; }
 .modal-overlay.show .modal { transform: scale(1) translateY(0); }
 .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
 .form-group { margin-bottom: 16px; }
 .form-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: block; }
-.form-input, .form-select {
-  width: 100%; background: var(--surface2);
-  border: 1px solid var(--border); border-radius: 8px;
-  padding: 10px 12px; font-size: 14px; font-family: inherit;
-  color: var(--text); outline: none; transition: border-color 0.2s;
-}
+.form-input, .form-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; }
 .form-input:focus, .form-select:focus { border-color: var(--primary); }
 .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.form-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-/* Toast */
-#dash-toast {
-  position: fixed; bottom: 24px; right: 24px; z-index: 999;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 20px;
-  font-size: 13px; font-weight: 600; color: var(--text);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  transform: translateY(100px); opacity: 0;
-  transition: all 0.3s; pointer-events: none;
-  max-width: 320px;
-}
+/* ── TOAST ── */
+#dash-toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--text); box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateY(100px); opacity: 0; transition: all 0.3s; pointer-events: none; max-width: 340px; }
 #dash-toast.show { transform: translateY(0); opacity: 1; }
 #dash-toast.success { border-color: var(--primary); }
 #dash-toast.error   { border-color: var(--danger); }
+#dash-toast.warn    { border-color: var(--warn); }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  .two-col { grid-template-columns: 1fr; }
-}
+/* ── MISC ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.chart-wrap { position: relative; height: 220px; }
+.empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state-text { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: var(--text-2); }
+.empty-state-sub { font-size: 13px; }
+.loader { display: flex; align-items: center; justify-content: center; padding: 48px; color: var(--text-muted); gap: 12px; font-size: 14px; }
+.spinner { width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--surface2); border-top-color: var(--primary); animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); border-radius: 10px; padding: 4px; border: 1px solid var(--border); }
+.tab-btn { flex: 1; padding: 8px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: none; color: var(--text-muted); transition: all 0.15s; }
+.tab-btn.active { background: var(--primary); color: #fff; }
+.alert-box { border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; }
+.alert-warn { background: var(--warn-lt); border: 1px solid rgba(245,158,11,0.3); color: var(--warn); }
+.alert-info { background: var(--info-lt); border: 1px solid rgba(59,130,246,0.3); color: var(--info); }
+.holiday-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--warn-lt); border: 1px solid rgba(245,158,11,0.3); color: var(--warn); padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 700; }
+.wali-table td { font-size: 11px; padding: 6px 8px; text-align: center; border: 1px solid var(--border); }
+.wali-table th { font-size: 10px; padding: 6px 4px; text-align: center; background: var(--surface2); border: 1px solid var(--border); }
+.wali-table .td-name-cell { text-align: left; font-weight: 600; white-space: nowrap; font-size: 12px; }
+.wali-H  { background: rgba(16,185,129,0.15); color: var(--primary); font-weight: 700; }
+.wali-T  { background: rgba(245,158,11,0.15);  color: var(--warn); font-weight: 700; }
+.wali-I  { background: rgba(59,130,246,0.15);  color: var(--info); font-weight: 700; }
+.wali-S  { background: rgba(139,92,246,0.15);  color: var(--purple); font-weight: 700; }
+.wali-A  { background: rgba(239,68,68,0.15);   color: var(--danger); font-weight: 700; }
+.wali-   { color: var(--text-muted); font-size: 10px; }
+.audit-action { font-family: monospace; font-size: 11px; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .two-col { grid-template-columns: 1fr; } }
 @media (max-width: 768px) {
   .sidebar { position: fixed; top: var(--header-h); left: 0; bottom: 0; z-index: 100; transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
@@ -334,62 +202,35 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
   .content { padding: 16px; }
   .header-date { display: none; }
 }
-@media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr; }
-}
-
-/* Empty state */
-.empty-state {
-  text-align: center; padding: 48px 24px;
-  color: var(--text-muted);
-}
-.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
-.empty-state-text { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: var(--text-2); }
-.empty-state-sub { font-size: 13px; }
-
-/* Loader */
-.loader {
-  display: flex; align-items: center; justify-content: center;
-  padding: 40px; color: var(--text-muted);
-}
-.spinner {
-  width: 24px; height: 24px; border-radius: 50%;
-  border: 3px solid var(--surface2); border-top-color: var(--primary);
-  animation: spin 0.7s linear infinite; margin-right: 10px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Tabs */
-.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); border-radius: 10px; padding: 4px; border: 1px solid var(--border); }
-.tab-btn {
-  flex: 1; padding: 8px; border-radius: 8px; border: none;
-  font-size: 13px; font-weight: 600; font-family: inherit;
-  cursor: pointer; background: none; color: var(--text-muted);
-  transition: all 0.15s;
-}
-.tab-btn.active { background: var(--primary); color: #fff; }
+@media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
-<!-- ══ LOGIN ═══════════════════════════════════════════════ -->
+<!-- ══ LOGIN ═══════════════════════════════════════════════════ -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">🏫</div>
     <div class="login-title">Dashboard Admin</div>
-    <div class="login-sub">MTS Al Huda Putri Malang — Tata Usaha</div>
+    <div class="login-sub">MTS Al Huda Putri Malang — Sistem Presensi v2.0</div>
+    <div class="login-role-tabs">
+      <button class="role-tab active" onclick="selectRole('TU',this)">🏢 TU</button>
+      <button class="role-tab" onclick="selectRole('KEPSEK',this)">👔 Kepala Sekolah</button>
+      <button class="role-tab" onclick="selectRole('WALI',this)">👩‍🏫 Wali Kelas</button>
+    </div>
     <div class="login-input-wrap">
       <span class="login-input-icon">🔐</span>
       <input id="pin-input" class="login-input" type="password" inputmode="numeric"
-             maxlength="8" placeholder="Masukkan PIN"
+             maxlength="20" placeholder="Masukkan PIN"
              onkeydown="if(event.key==='Enter') doLogin()" />
     </div>
-    <button class="login-btn" onclick="doLogin()">Masuk</button>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Masuk</button>
     <div class="login-err" id="login-err"></div>
+    <div class="login-version">v2.0.0 · Autentikasi Server-Side Aman</div>
   </div>
 </div>
 
-<!-- ══ APP SHELL ════════════════════════════════════════════ -->
+<!-- ══ APP SHELL ═══════════════════════════════════════════════ -->
 <div id="app" style="display:flex;flex-direction:column;">
 
   <!-- Header -->
@@ -398,7 +239,8 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
     <div class="header-logo-text">Presensi MTS Al Huda Putri</div>
     <div class="header-right">
       <div class="header-date" id="header-date"></div>
-      <div class="header-user-chip" onclick="logout()">👤 TU &nbsp;·&nbsp; Logout</div>
+      <span class="header-role-badge" id="role-badge"></span>
+      <div class="header-user-chip" onclick="logout()">👤 Logout</div>
     </div>
   </div>
 
@@ -407,44 +249,28 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <div class="sidebar-section-label">Menu Utama</div>
-      <div class="nav-item active" onclick="navigate('home')" id="nav-home">
-        <span class="nav-icon">🏠</span> Beranda
-      </div>
-      <div class="nav-item" onclick="navigate('absen-siswa')" id="nav-absen-siswa">
-        <span class="nav-icon">👩‍🎓</span> Absensi Siswa
-      </div>
-      <div class="nav-item" onclick="navigate('absen-guru')" id="nav-absen-guru">
-        <span class="nav-icon">👨‍🏫</span> Absensi Guru
-      </div>
+      <div class="nav-item active" onclick="navigate('home')" id="nav-home"><span class="nav-icon">🏠</span> Beranda</div>
+      <div class="nav-item" onclick="navigate('absen-siswa')" id="nav-absen-siswa"><span class="nav-icon">👩‍🎓</span> Absensi Siswa</div>
+      <div class="nav-item" onclick="navigate('absen-guru')" id="nav-absen-guru"><span class="nav-icon">👨‍🏫</span> Absensi Guru</div>
 
       <div class="sidebar-section-label">Laporan</div>
-      <div class="nav-item" onclick="navigate('laporan')" id="nav-laporan">
-        <span class="nav-icon">📊</span> Rekap & Laporan
-      </div>
+      <div class="nav-item" onclick="navigate('laporan-siswa')" id="nav-laporan-siswa"><span class="nav-icon">📊</span> Rekap Siswa</div>
+      <div class="nav-item" onclick="navigate('laporan-guru')" id="nav-laporan-guru"><span class="nav-icon">📊</span> Rekap Guru</div>
+      <div class="nav-item" onclick="navigate('wali-kelas')" id="nav-wali-kelas"><span class="nav-icon">📋</span> Rekap Wali Kelas</div>
 
       <div class="sidebar-section-label">Data Master</div>
-      <div class="nav-item" onclick="navigate('data-siswa')" id="nav-data-siswa">
-        <span class="nav-icon">📋</span> Data Siswa
-      </div>
-      <div class="nav-item" onclick="navigate('data-guru')" id="nav-data-guru">
-        <span class="nav-icon">👥</span> Data Guru/Tendik
-      </div>
+      <div class="nav-item" onclick="navigate('data-siswa')" id="nav-data-siswa"><span class="nav-icon">📋</span> Data Siswa</div>
+      <div class="nav-item" onclick="navigate('data-guru')" id="nav-data-guru"><span class="nav-icon">👥</span> Data Guru/Tendik</div>
+      <div class="nav-item" onclick="navigate('hari-libur')" id="nav-hari-libur"><span class="nav-icon">📅</span> Hari Libur</div>
 
       <div class="sidebar-section-label">Sistem</div>
-      <div class="nav-item" onclick="navigate('perangkat')" id="nav-perangkat">
-        <span class="nav-icon">📱</span> Perangkat Scanner
-      </div>
-      <div class="nav-item" onclick="navigate('pengaturan')" id="nav-pengaturan">
-        <span class="nav-icon">⚙️</span> Pengaturan
-      </div>
+      <div class="nav-item hidden" onclick="navigate('audit-log')" id="nav-audit-log"><span class="nav-icon">📜</span> Audit Log</div>
+      <div class="nav-item hidden" onclick="navigate('perangkat')" id="nav-perangkat"><span class="nav-icon">📱</span> Perangkat Scanner</div>
+      <div class="nav-item hidden" onclick="navigate('pengaturan')" id="nav-pengaturan"><span class="nav-icon">⚙️</span> Pengaturan</div>
 
       <div class="sidebar-bottom">
-        <div class="nav-item" onclick="window.open('../scanner/','_blank')">
-          <span class="nav-icon">📷</span> Buka Scanner
-        </div>
-        <div class="nav-item" onclick="window.open('../qrcard/','_blank')">
-          <span class="nav-icon">🪪</span> Generator QR Card
-        </div>
+        <div class="nav-item" onclick="window.open('../scanner/','_blank')"><span class="nav-icon">📷</span> Buka Scanner</div>
+        <div class="nav-item" onclick="window.open('../qrcard/','_blank')"><span class="nav-icon">🪪</span> Generator QR Card</div>
       </div>
     </div>
 
@@ -455,7 +281,7 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
   </div>
 </div>
 
-<!-- ══ MODAL ════════════════════════════════════════════════ -->
+<!-- Modal -->
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modal-body"></div>
 </div>
@@ -464,99 +290,195 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
 <div id="dash-toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // GLOBALS
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 const API = APP_CONFIG.API_URL;
-let currentPage = 'home';
-let allStudents = [];
-let allTeachers = [];
-let todayAttendance = { siswa: [], guru: [] };
+let currentPage   = 'home';
+let allStudents   = [];
+let allTeachers   = [];
+let todayAbsence  = { siswa: [], guru: [] };
 let chartInstance = null;
+let SESSION_TOKEN = sessionStorage.getItem('mts_session_token') || null;
+let USER_ROLE     = sessionStorage.getItem('mts_user_role')     || null;
+let selectedRole  = 'TU';
 
 const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
-// ══════════════════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════════════════
-function doLogin() {
+// ── XSS protection ──
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTH — SERVER SIDE
+// ══════════════════════════════════════════════════════════════
+function selectRole(role, el) {
+  selectedRole = role;
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function doLogin() {
   const pin = document.getElementById('pin-input').value;
   const err = document.getElementById('login-err');
-  if (pin === APP_CONFIG.ADMIN_PIN) {
-    sessionStorage.setItem('mts_admin', '1');
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initApp();
-    err.textContent = '';
-  } else {
-    err.textContent = '❌ PIN salah. Coba lagi.';
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-input').focus();
+  const btn = document.getElementById('login-btn');
+
+  if (!pin) { err.textContent = 'Masukkan PIN terlebih dahulu.'; return; }
+
+  btn.textContent = '⏳ Memverifikasi...';
+  btn.disabled = true;
+  err.textContent = '';
+
+  try {
+    const res = await apiPostPublic({ action: 'login', pin });
+    if (res.success) {
+      SESSION_TOKEN = res.token;
+      USER_ROLE     = res.role;
+      sessionStorage.setItem('mts_session_token', SESSION_TOKEN);
+      sessionStorage.setItem('mts_user_role',     USER_ROLE);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display          = 'flex';
+      initApp();
+    } else {
+      err.textContent = '❌ ' + (res.message || 'PIN salah.');
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-input').focus();
+    }
+  } catch(e) {
+    err.textContent = '❌ Gagal terhubung ke server. Periksa koneksi internet.';
+  } finally {
+    btn.textContent = 'Masuk';
+    btn.disabled = false;
   }
 }
 
-function logout() {
+async function logout() {
   if (!confirm('Keluar dari dashboard?')) return;
-  sessionStorage.removeItem('mts_admin');
+  try {
+    await apiPost({ action: 'logout' });
+  } catch(e) {}
+  sessionStorage.removeItem('mts_session_token');
+  sessionStorage.removeItem('mts_user_role');
+  SESSION_TOKEN = null;
+  USER_ROLE     = null;
   location.reload();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   updateHeaderDate();
   setInterval(updateHeaderDate, 60000);
-  if (sessionStorage.getItem('mts_admin')) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    initApp();
+
+  if (SESSION_TOKEN && USER_ROLE) {
+    // Validasi session yang tersimpan
+    apiPostPublic({ action: 'validate_session', sessionToken: SESSION_TOKEN })
+      .then(res => {
+        if (res.valid) {
+          document.getElementById('login-screen').style.display = 'none';
+          document.getElementById('app').style.display          = 'flex';
+          initApp();
+        } else {
+          sessionStorage.removeItem('mts_session_token');
+          sessionStorage.removeItem('mts_user_role');
+          SESSION_TOKEN = null;
+          USER_ROLE     = null;
+          document.getElementById('pin-input').focus();
+        }
+      }).catch(() => {
+        // Jika server tidak bisa dihubungi, paksa login ulang
+        sessionStorage.clear();
+        document.getElementById('pin-input').focus();
+      });
   } else {
     document.getElementById('pin-input').focus();
   }
-  document.getElementById('pin-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
 });
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 async function initApp() {
+  // Tampilkan role di header
+  const roleEl = document.getElementById('role-badge');
+  roleEl.textContent = USER_ROLE;
+  roleEl.className = 'header-role-badge role-' + USER_ROLE;
+
+  // Role-based nav visibility
+  applyRoleNavigation();
+
   try {
     const [studentsRes, teachersRes, attendanceRes] = await Promise.all([
       apiGet('get_students'),
       apiGet('get_teachers'),
       apiGet('get_attendance', { tanggal: todayStr() })
     ]);
-    allStudents      = studentsRes.data  || [];
-    allTeachers      = teachersRes.data  || [];
-    todayAttendance  = { siswa: attendanceRes.siswa || [], guru: attendanceRes.guru || [] };
+    allStudents  = studentsRes.data  || [];
+    allTeachers  = teachersRes.data  || [];
+    todayAbsence = { siswa: attendanceRes.siswa || [], guru: attendanceRes.guru || [] };
     navigate('home');
   } catch(e) {
-    showContent(`<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">Gagal terhubung ke server</div><div class="empty-state-sub">Periksa koneksi internet dan URL API di config.js</div><br><button class="btn btn-primary" onclick="initApp()">Coba Lagi</button></div>`);
+    showContent(`<div class="empty-state">
+      <div class="empty-state-icon">❌</div>
+      <div class="empty-state-text">Gagal terhubung ke server</div>
+      <div class="empty-state-sub">Periksa koneksi internet dan URL API di config.js</div>
+      <br><button class="btn btn-primary" onclick="initApp()">🔄 Coba Lagi</button>
+    </div>`);
   }
 }
 
-// ══════════════════════════════════════════════════════════
+function applyRoleNavigation() {
+  // TU: akses penuh
+  // KEPSEK: bisa lihat semua, tidak bisa edit
+  // WALI: hanya laporan wali kelas & absensi
+  if (USER_ROLE === 'TU') {
+    document.getElementById('nav-audit-log').classList.remove('hidden');
+    document.getElementById('nav-perangkat').classList.remove('hidden');
+    document.getElementById('nav-pengaturan').classList.remove('hidden');
+  } else if (USER_ROLE === 'KEPSEK') {
+    document.getElementById('nav-perangkat').classList.remove('hidden');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
 // NAVIGATION
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 function navigate(page) {
+  // Cek izin akses berdasarkan role
+  const KEPSEK_ONLY_READ = ['data-siswa','data-guru','hari-libur','perangkat','pengaturan'];
+  const TU_ONLY = ['audit-log'];
+  const WALI_ALLOWED = ['home','absen-siswa','absen-guru','laporan-siswa','laporan-guru','wali-kelas'];
+
+  if (USER_ROLE === 'WALI' && !WALI_ALLOWED.includes(page)) {
+    showToast('Akses tidak diizinkan untuk role Wali Kelas', 'error');
+    return;
+  }
+
   currentPage = page;
-  // Update nav active state
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const activeNav = document.getElementById('nav-' + page);
   if (activeNav) activeNav.classList.add('active');
-  // Close sidebar on mobile
   document.getElementById('sidebar').classList.remove('open');
 
   switch (page) {
-    case 'home':        renderHome();        break;
-    case 'absen-siswa': renderAbsenSiswa();  break;
-    case 'absen-guru':  renderAbsenGuru();   break;
-    case 'laporan':     renderLaporan();     break;
-    case 'data-siswa':  renderDataSiswa();   break;
-    case 'data-guru':   renderDataGuru();    break;
-    case 'perangkat':   renderPerangkat();   break;
-    case 'pengaturan':  renderPengaturan();  break;
+    case 'home':          renderHome();          break;
+    case 'absen-siswa':   renderAbsenSiswa();    break;
+    case 'absen-guru':    renderAbsenGuru();     break;
+    case 'laporan-siswa': renderLaporanSiswa();  break;
+    case 'laporan-guru':  renderLaporanGuru();   break;
+    case 'wali-kelas':    renderWaliKelas();     break;
+    case 'data-siswa':    renderDataSiswa();     break;
+    case 'data-guru':     renderDataGuru();      break;
+    case 'hari-libur':    renderHariLibur();     break;
+    case 'audit-log':     renderAuditLog();      break;
+    case 'perangkat':     renderPerangkat();     break;
+    case 'pengaturan':    renderPengaturan();    break;
   }
 }
 
@@ -564,27 +486,31 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // HOME
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 async function renderHome() {
   showContent(`<div class="loader"><div class="spinner"></div> Memuat beranda...</div>`);
   try {
     const res = await apiGet('get_stats', { tanggal: todayStr() });
     const s = res.siswa, g = res.guru;
 
+    const holidayBanner = res.hariLibur
+      ? `<div class="alert-box alert-warn">🏖️ <div><strong>Hari Libur:</strong> ${esc(res.hariLibur)} — Tidak ada pencatatan absensi hari ini.</div></div>`
+      : '';
+
     const html = `
     <div class="page-header">
       <div class="page-title">Selamat Datang 👋</div>
       <div class="page-sub">Data kehadiran hari ini — ${formatDateLong(new Date())}</div>
     </div>
-
+    ${holidayBanner}
     <div class="stat-grid">
       <div class="stat-card green-card">
         <div class="stat-icon">✅</div>
         <div class="stat-body">
           <div class="stat-num">${s.hadir + s.terlambat}</div>
-          <div class="stat-label">Siswa Hadir Hari Ini</div>
+          <div class="stat-label">Siswa Hadir</div>
           <div class="mini-progress">
             <div class="mini-bar-wrap"><div class="mini-bar" style="width:${s.persen}%;background:var(--primary)"></div></div>
             <div class="mini-pct" style="color:var(--primary)">${s.persen}%</div>
@@ -626,15 +552,20 @@ async function renderHome() {
       </div>
     </div>
 
+    ${(s.izin > 0 || s.sakit > 0 || s.alpa > 0) ? `
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+      <div class="stat-card blue-card"><div class="stat-icon">📋</div><div class="stat-body"><div class="stat-num">${s.izin}</div><div class="stat-label">Siswa Izin</div></div></div>
+      <div class="stat-card purple-card"><div class="stat-icon">🏥</div><div class="stat-body"><div class="stat-num">${s.sakit}</div><div class="stat-label">Siswa Sakit</div></div></div>
+      <div class="stat-card red-card"><div class="stat-icon">❌</div><div class="stat-body"><div class="stat-num">${s.alpa}</div><div class="stat-label">Siswa Alpa</div></div></div>
+    </div>` : ''}
+
     <div class="two-col">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">📊 Kehadiran Siswa per Kelas</div>
+          <div class="card-title">📊 Kehadiran per Kelas</div>
           <button class="btn btn-secondary btn-sm" onclick="navigate('absen-siswa')">Lihat Detail →</button>
         </div>
-        <div class="card-body">
-          <div class="chart-wrap"><canvas id="kelasChart"></canvas></div>
-        </div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="kelasChart"></canvas></div></div>
       </div>
       <div class="card">
         <div class="card-header">
@@ -643,12 +574,8 @@ async function renderHome() {
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-wrap">
-            <table>
-              <thead><tr><th>Nama</th><th>Kelas</th><th>Jam</th><th>Status</th></tr></thead>
-              <tbody id="recent-tbody">
-                ${renderRecentRows()}
-              </tbody>
-            </table>
+            <table><thead><tr><th>Nama</th><th>Kelas</th><th>Jam</th><th>Status</th></tr></thead>
+            <tbody>${renderRecentRows()}</tbody></table>
           </div>
         </div>
       </div>
@@ -656,16 +583,15 @@ async function renderHome() {
 
     showContent(html);
 
-    // Render chart per kelas
+    // Chart
     const kelasList = APP_CONFIG.KELAS_LIST || ['VII','VIII','IX'];
     const chartData = kelasList.map(k => {
-      const siswaKelas = allStudents.filter(s => s.kelas === k);
-      const hadirKelas = todayAttendance.siswa.filter(a => a.kelas === k && (a.status==='HADIR'||a.status==='TERLAMBAT'));
+      const siswaKelas = allStudents.filter(s => s.kelas === k && s.status === 'AKTIF');
+      const hadirKelas = todayAbsence.siswa.filter(a => a.kelas === k && (a.status==='HADIR'||a.status==='TERLAMBAT'));
       return { kelas: k, total: siswaKelas.length, hadir: hadirKelas.length };
     });
-
     const ctx = document.getElementById('kelasChart');
-    if (ctx && chartData.length > 0) {
+    if (ctx) {
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: 'bar',
@@ -686,19 +612,19 @@ async function renderHome() {
         }
       });
     }
-  } catch(e) { showContent('<div class="loader">Gagal memuat: ' + e.message + '</div>'); }
+  } catch(e) { showContent(`<div class="loader">Gagal memuat: ${esc(e.message)}</div>`); }
 }
 
 function renderRecentRows() {
-  const recent = [...todayAttendance.siswa]
+  const recent = [...todayAbsence.siswa]
     .sort((a,b) => (b.jamMasuk||'').localeCompare(a.jamMasuk||''))
     .slice(0, 8);
   if (recent.length === 0) return `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">Belum ada absensi hari ini</td></tr>`;
   return recent.map(a => `
     <tr>
-      <td class="td-name">${a.nama}</td>
-      <td class="td-muted">Kelas ${a.kelas}</td>
-      <td class="td-muted">${a.jamMasuk}</td>
+      <td class="td-name">${esc(a.nama)}</td>
+      <td class="td-muted">Kls ${esc(a.kelas)}</td>
+      <td class="td-muted">${esc(a.jamMasuk)}</td>
       <td>${badgeHtml(a.status)}</td>
     </tr>`).join('');
 }
@@ -706,75 +632,72 @@ function renderRecentRows() {
 async function refreshToday() {
   try {
     const res = await apiGet('get_attendance', { tanggal: todayStr() });
-    todayAttendance = { siswa: res.siswa||[], guru: res.guru||[] };
+    todayAbsence = { siswa: res.siswa||[], guru: res.guru||[] };
     renderHome();
     showToast('✅ Data diperbarui', 'success');
   } catch { showToast('❌ Gagal memperbarui', 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // ABSENSI SISWA
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
   showContent(`<div class="loader"><div class="spinner"></div> Memuat absensi siswa...</div>`);
   try {
-    const res  = await apiGet('get_attendance', { tanggal, kelas });
-    const data = res.siswa || [];
-    const kelasList = ['', ...APP_CONFIG.KELAS_LIST];
-
-    // Build siswa yg belum absen
-    const sudahNIS = new Set(data.map(a => String(a.nis)));
-    const belum    = allStudents.filter(s => !sudahNIS.has(String(s.nis)) && (!kelas || s.kelas === kelas));
+    const res        = await apiGet('get_attendance', { tanggal, kelas });
+    const data       = res.siswa || [];
+    const hariLibur  = res.hariLibur;
+    const kelasList  = ['', ...APP_CONFIG.KELAS_LIST];
+    const sudahNIS   = new Set(data.map(a => String(a.nis)));
+    const belum      = allStudents.filter(s => !sudahNIS.has(String(s.nis)) && s.status === 'AKTIF' && (!kelas || s.kelas === kelas));
+    const canEdit    = USER_ROLE === 'TU';
 
     const html = `
     <div class="page-header">
       <div class="page-title">👩‍🎓 Absensi Siswa</div>
       <div class="page-sub">Rekap kehadiran siswa harian</div>
     </div>
+    ${hariLibur ? `<div class="alert-box alert-warn">🏖️ Hari Libur: ${esc(hariLibur)}</div>` : ''}
     <div class="filter-bar">
       <input type="date" id="filter-tgl-siswa" class="filter-select" value="${tanggal}" onchange="renderAbsenSiswa(this.value,document.getElementById('filter-kls-siswa').value)"/>
       <select id="filter-kls-siswa" class="filter-select" onchange="renderAbsenSiswa(document.getElementById('filter-tgl-siswa').value,this.value)">
         ${kelasList.map(k => `<option value="${k}" ${k===kelas?'selected':''}>${k||'Semua Kelas'}</option>`).join('')}
       </select>
-      <button class="btn btn-primary" onclick="showInputManualSiswa(document.getElementById('filter-tgl-siswa').value)">+ Input Manual</button>
-      <button class="btn btn-secondary" onclick="exportAbsenSiswa()">⬇ Export Excel</button>
+      ${canEdit ? `<button class="btn btn-primary" onclick="showInputManualSiswa(document.getElementById('filter-tgl-siswa').value)">+ Input Manual</button>
+      <button class="btn btn-secondary" onclick="exportAbsenSiswa()">⬇ Export</button>` : ''}
     </div>
-
     <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
       ${statMiniCard('✅','Hadir',data.filter(a=>a.status==='HADIR').length,'green')}
       ${statMiniCard('⚠️','Terlambat',data.filter(a=>a.status==='TERLAMBAT').length,'yellow')}
-      ${statMiniCard('📋','Belum Absen',belum.length,'red')}
-      ${statMiniCard('📝','Total Scan',data.length,'blue')}
+      ${statMiniCard('📋','Izin',data.filter(a=>a.status==='IZIN').length,'blue')}
+      ${statMiniCard('🚫','Belum Absen',belum.length,'red')}
     </div>
-
     <div class="card" style="margin-bottom:20px">
       <div class="card-header">
         <div class="card-title">Daftar Kehadiran — ${formatDateLong(new Date(tanggal + 'T00:00'))}</div>
-        <span style="font-size:13px;color:var(--text-muted)">${data.length} siswa tercatat</span>
+        <span style="font-size:13px;color:var(--text-muted)">${data.length} tercatat</span>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>NIS</th><th>Nama Siswa</th><th>Kelas</th><th>Jam Masuk</th><th>Status</th><th>Aksi</th></tr></thead>
+          <thead><tr><th>#</th><th>NIS</th><th>Nama Siswa</th><th>Kelas</th><th>Jam Masuk</th><th>Status</th><th>Keterangan</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
           <tbody>
-            ${data.length === 0 ? `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Belum ada data absensi</div></div></td></tr>` :
+            ${data.length === 0 ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Belum ada data absensi</div></div></td></tr>` :
               data.map((a,i) => `
               <tr>
                 <td class="td-muted">${i+1}</td>
-                <td class="td-muted">${a.nis}</td>
-                <td class="td-name">${a.nama}</td>
-                <td>Kelas ${a.kelas}</td>
-                <td>${a.jamMasuk||'-'}</td>
+                <td class="td-muted">${esc(a.nis)}</td>
+                <td class="td-name">${esc(a.nama)}</td>
+                <td>Kelas ${esc(a.kelas)}</td>
+                <td>${esc(a.jamMasuk||'-')}</td>
                 <td>${badgeHtml(a.status)}</td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="editAbsen('${a.id}','siswa','${a.nama}','${a.status}')">✏️ Edit</button>
-                </td>
+                <td class="td-muted">${esc(a.keterangan||'-')}</td>
+                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsen('${esc(a.id)}','siswa','${esc(a.nama)}','${esc(a.status)}')">✏️ Edit</button></td>` : ''}
               </tr>`).join('')}
           </tbody>
         </table>
       </div>
     </div>
-
-    ${belum.length > 0 ? `
+    ${belum.length > 0 && canEdit ? `
     <div class="card">
       <div class="card-header">
         <div class="card-title" style="color:var(--danger)">🚫 Belum Absen (${belum.length} siswa)</div>
@@ -782,17 +705,15 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Input Keterangan</th></tr></thead>
+          <thead><tr><th>#</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Aksi</th></tr></thead>
           <tbody>
             ${belum.map((s,i) => `
             <tr>
               <td class="td-muted">${i+1}</td>
-              <td class="td-muted">${s.nis}</td>
-              <td class="td-name">${s.nama}</td>
-              <td>Kelas ${s.kelas}</td>
-              <td>
-                <button class="btn btn-warn btn-sm" onclick="showInputManualSiswaFor('${tanggal}','${s.nis}','${s.nama}','${s.kelas}')">Input</button>
-              </td>
+              <td class="td-muted">${esc(s.nis)}</td>
+              <td class="td-name">${esc(s.nama)}</td>
+              <td>Kelas ${esc(s.kelas)}</td>
+              <td><button class="btn btn-warn btn-sm" onclick="showInputManualSiswaFor('${tanggal}','${esc(s.nis)}','${esc(s.nama)}','${esc(s.kelas)}')">Input Status</button></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -800,79 +721,100 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
     </div>` : ''}`;
 
     showContent(html);
-  } catch(e) { showContent('<div class="loader">Error: ' + e.message + '</div>'); }
+  } catch(e) { showContent(`<div class="loader">Error: ${esc(e.message)}</div>`); }
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // ABSENSI GURU
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 async function renderAbsenGuru(tanggal = todayStr()) {
   showContent(`<div class="loader"><div class="spinner"></div> Memuat absensi guru...</div>`);
   try {
-    const res  = await apiGet('get_attendance', { tanggal });
-    const data = res.guru || [];
-    const sudahNIG = new Set(data.map(a => String(a.nig)));
-    const belum    = allTeachers.filter(t => !sudahNIG.has(String(t.nig)));
+    const res       = await apiGet('get_attendance', { tanggal });
+    const data      = res.guru || [];
+    const hariLibur = res.hariLibur;
+    const sudahNIG  = new Set(data.map(a => String(a.nig)));
+    const belum     = allTeachers.filter(t => !sudahNIG.has(String(t.nig)));
+    const canEdit   = USER_ROLE === 'TU';
 
     const html = `
     <div class="page-header">
       <div class="page-title">👨‍🏫 Absensi Guru & Tendik</div>
       <div class="page-sub">Kehadiran tenaga pendidik dan kependidikan</div>
     </div>
+    ${hariLibur ? `<div class="alert-box alert-warn">🏖️ Hari Libur: ${esc(hariLibur)}</div>` : ''}
     <div class="filter-bar">
       <input type="date" id="filter-tgl-guru" class="filter-select" value="${tanggal}" onchange="renderAbsenGuru(this.value)"/>
-      <button class="btn btn-primary" onclick="showInputManualGuru(document.getElementById('filter-tgl-guru').value)">+ Input Manual</button>
-      <button class="btn btn-secondary" onclick="exportAbsenGuru()">⬇ Export Excel</button>
+      ${canEdit ? `<button class="btn btn-primary" onclick="showInputManualGuru(document.getElementById('filter-tgl-guru').value)">+ Input Manual</button>
+      <button class="btn btn-secondary" onclick="exportAbsenGuru()">⬇ Export</button>` : ''}
     </div>
-
     <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
       ${statMiniCard('✅','Hadir',data.filter(a=>a.statusMasuk==='HADIR').length,'green')}
       ${statMiniCard('⚠️','Terlambat',data.filter(a=>a.statusMasuk==='TERLAMBAT').length,'yellow')}
       ${statMiniCard('🏠','Sudah Pulang',data.filter(a=>a.jamPulang).length,'blue')}
       ${statMiniCard('❌','Belum Absen',belum.length,'red')}
     </div>
-
-    <div class="card">
+    <div class="card" style="margin-bottom:20px">
       <div class="card-header">
         <div class="card-title">Kehadiran Guru — ${formatDateLong(new Date(tanggal + 'T00:00'))}</div>
         <span style="font-size:13px;color:var(--text-muted)">${data.length} guru tercatat</span>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>NIG</th><th>Nama</th><th>Jabatan</th><th>Jam Masuk</th><th>Status Masuk</th><th>Jam Pulang</th><th>Status Pulang</th></tr></thead>
+          <thead><tr><th>#</th><th>NIG</th><th>Nama</th><th>Jabatan</th><th>Jam Masuk</th><th>Status Masuk</th><th>Jam Pulang</th><th>Status Pulang</th><th>Ket.</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
           <tbody>
-            ${data.length === 0 ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Belum ada data</div></div></td></tr>` :
+            ${data.length === 0 ? `<tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Belum ada data</div></div></td></tr>` :
               data.map((a,i) => `
               <tr>
                 <td class="td-muted">${i+1}</td>
-                <td class="td-muted">${a.nig}</td>
-                <td class="td-name">${a.nama}</td>
-                <td class="td-muted">${(allTeachers.find(t=>String(t.nig)===String(a.nig))?.jabatan)||'-'}</td>
-                <td>${a.jamMasuk||'-'}</td>
+                <td class="td-muted">${esc(a.nig)}</td>
+                <td class="td-name">${esc(a.nama)}</td>
+                <td class="td-muted">${esc((allTeachers.find(t=>String(t.nig)===String(a.nig))?.jabatan)||'-')}</td>
+                <td>${esc(a.jamMasuk||'-')}</td>
                 <td>${badgeHtml(a.statusMasuk)}</td>
-                <td>${a.jamPulang ? a.jamPulang : '<span style="color:var(--text-muted)">-</span>'}</td>
+                <td>${esc(a.jamPulang||'-')}</td>
                 <td>${a.statusPulang ? badgeHtml(a.statusPulang,'pulang') : '<span style="color:var(--text-muted)">-</span>'}</td>
+                <td class="td-muted">${esc(a.keterangan||'-')}</td>
+                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsenGuru('${esc(a.id)}','${esc(a.nama)}','${esc(a.statusMasuk)}')">✏️</button></td>` : ''}
               </tr>`).join('')}
           </tbody>
         </table>
       </div>
-    </div>`;
+    </div>
+    ${belum.length > 0 && canEdit ? `
+    <div class="card">
+      <div class="card-header"><div class="card-title" style="color:var(--danger)">❌ Belum Absen (${belum.length} guru)</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>NIG</th><th>Nama</th><th>Jabatan</th><th>Aksi</th></tr></thead>
+          <tbody>${belum.map((t,i) => `
+            <tr>
+              <td class="td-muted">${i+1}</td>
+              <td class="td-muted">${esc(t.nig)}</td>
+              <td class="td-name">${esc(t.nama)}</td>
+              <td class="td-muted">${esc(t.jabatan||'-')}</td>
+              <td><button class="btn btn-warn btn-sm" onclick="showInputManualGuruFor('${tanggal}','${esc(t.nig)}','${esc(t.nama)}')">Input Status</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}`;
 
     showContent(html);
-  } catch(e) { showContent('<div class="loader">Error: ' + e.message + '</div>'); }
+  } catch(e) { showContent(`<div class="loader">Error: ${esc(e.message)}</div>`); }
 }
 
-// ══════════════════════════════════════════════════════════
-// LAPORAN
-// ══════════════════════════════════════════════════════════
-async function renderLaporan() {
-  const now = new Date();
+// ══════════════════════════════════════════════════════════════
+// REKAP LAPORAN SISWA
+// ══════════════════════════════════════════════════════════════
+async function renderLaporanSiswa() {
+  const now         = new Date();
   const bulanDefault = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-  const html = `
+  showContent(`
   <div class="page-header">
-    <div class="page-title">📊 Rekap & Laporan</div>
-    <div class="page-sub">Laporan kehadiran bulanan siswa</div>
+    <div class="page-title">📊 Rekap Kehadiran Siswa</div>
+    <div class="page-sub">Laporan kehadiran bulanan per siswa</div>
   </div>
   <div class="filter-bar">
     <input type="month" id="laporan-bulan" class="filter-select" value="${bulanDefault}" />
@@ -880,15 +822,13 @@ async function renderLaporan() {
       <option value="">Semua Kelas</option>
       ${APP_CONFIG.KELAS_LIST.map(k=>`<option value="${k}">Kelas ${k}</option>`).join('')}
     </select>
-    <button class="btn btn-primary" onclick="loadLaporan()">🔍 Tampilkan</button>
-    <button class="btn btn-secondary" onclick="exportLaporan()">⬇ Export Excel</button>
+    <button class="btn btn-primary" onclick="loadLaporanSiswa()">🔍 Tampilkan</button>
+    <button class="btn btn-secondary" onclick="exportLaporanSiswa()">⬇ Export Excel</button>
   </div>
-  <div id="laporan-result"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Pilih bulan dan klik Tampilkan</div></div></div>`;
-
-  showContent(html);
+  <div id="laporan-result"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Pilih bulan dan klik Tampilkan</div></div></div>`);
 }
 
-async function loadLaporan() {
+async function loadLaporanSiswa() {
   const bulan = document.getElementById('laporan-bulan').value;
   const kelas = document.getElementById('laporan-kelas').value;
   const el    = document.getElementById('laporan-result');
@@ -898,12 +838,14 @@ async function loadLaporan() {
   try {
     const res  = await apiGet('get_report', { bulan, kelas });
     const data = res.data || [];
-    if (data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Tidak ada data untuk periode ini</div></div>'; return; }
+    if (data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Tidak ada data periode ini</div></div>'; return; }
 
-    const hdrBulan = bulan.split('-');
-    const namaBulan = BULAN[parseInt(hdrBulan[1])-1] + ' ' + hdrBulan[0];
+    const namaBulan = BULAN[parseInt(bulan.split('-')[1])-1] + ' ' + bulan.split('-')[0];
+    const holidayInfo = res.hariLibur && res.hariLibur.length > 0
+      ? `<div class="alert-box alert-info" style="margin-bottom:12px">📅 ${res.hariLibur.length} hari libur dikecualikan dari rekap bulan ini.</div>` : '';
 
     el.innerHTML = `
+    ${holidayInfo}
     <div class="card">
       <div class="card-header">
         <div class="card-title">Rekap Kehadiran — ${namaBulan} ${kelas ? '· Kelas '+kelas : '(Semua Kelas)'}</div>
@@ -911,33 +853,34 @@ async function loadLaporan() {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>Hadir</th><th>Terlambat</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Total</th><th>%</th></tr></thead>
+          <thead><tr><th>#</th><th>NIS</th><th>Nama</th><th>Kelas</th><th style="color:var(--primary)">Hadir</th><th style="color:var(--warn)">Terlambat</th><th style="color:var(--info)">Izin</th><th style="color:var(--purple)">Sakit</th><th style="color:var(--danger)">Alpa</th><th>Total</th><th>%</th></tr></thead>
           <tbody>
             ${data.map((d,i) => {
-              const total = d.hadir + d.terlambat + d.izin + d.sakit + d.alpa;
+              const total  = d.hadir + d.terlambat + d.izin + d.sakit + d.alpa;
               const persen = total > 0 ? Math.round((d.hadir + d.terlambat) / total * 100) : 0;
+              const pColor = persen>=80 ? 'var(--primary)' : persen>=60 ? 'var(--warn)' : 'var(--danger)';
               return `<tr>
                 <td class="td-muted">${i+1}</td>
-                <td class="td-muted">${d.nis}</td>
-                <td class="td-name">${d.nama}</td>
-                <td>Kelas ${d.kelas}</td>
+                <td class="td-muted">${esc(d.nis)}</td>
+                <td class="td-name">${esc(d.nama)}</td>
+                <td>Kelas ${esc(d.kelas)}</td>
                 <td style="color:var(--primary);font-weight:700">${d.hadir}</td>
                 <td style="color:var(--warn);font-weight:700">${d.terlambat}</td>
                 <td style="color:var(--info)">${d.izin}</td>
                 <td style="color:var(--purple)">${d.sakit}</td>
                 <td style="color:var(--danger)">${d.alpa}</td>
                 <td>${total}</td>
-                <td><span style="font-weight:700;color:${persen>=80?'var(--primary)':persen>=60?'var(--warn)':'var(--danger)'}">${persen}%</span></td>
+                <td><span style="font-weight:700;color:${pColor}">${persen}%</span></td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
       </div>
     </div>`;
-  } catch(e) { el.innerHTML = '<div class="loader">Error: ' + e.message + '</div>'; }
+  } catch(e) { el.innerHTML = `<div class="loader">Error: ${esc(e.message)}</div>`; }
 }
 
-async function exportLaporan() {
+async function exportLaporanSiswa() {
   const bulan = document.getElementById('laporan-bulan')?.value;
   const kelas = document.getElementById('laporan-kelas')?.value;
   if (!bulan) { showToast('Pilih bulan dahulu', 'error'); return; }
@@ -949,15 +892,195 @@ async function exportLaporan() {
       'Sakit': d.sakit, 'Alpa': d.alpa,
       'Total': d.hadir+d.terlambat+d.izin+d.sakit+d.alpa
     }));
-    exportToExcel(data, `Rekap_${bulan}${kelas?'_Kelas'+kelas:''}`);
-  } catch(e) { showToast('❌ Gagal export: ' + e.message, 'error'); }
+    exportToExcel(data, `Rekap_Siswa_${bulan}${kelas?'_Kelas'+kelas:''}`);
+  } catch(e) { showToast('❌ Gagal export', 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// REKAP LAPORAN GURU (BARU)
+// ══════════════════════════════════════════════════════════════
+async function renderLaporanGuru() {
+  const now         = new Date();
+  const bulanDefault = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  showContent(`
+  <div class="page-header">
+    <div class="page-title">📊 Rekap Kehadiran Guru & Tendik</div>
+    <div class="page-sub">Laporan kehadiran bulanan tenaga pendidik dan kependidikan</div>
+  </div>
+  <div class="filter-bar">
+    <input type="month" id="laporan-guru-bulan" class="filter-select" value="${bulanDefault}" />
+    <button class="btn btn-primary" onclick="loadLaporanGuru()">🔍 Tampilkan</button>
+    <button class="btn btn-secondary" onclick="exportLaporanGuru()">⬇ Export Excel</button>
+  </div>
+  <div id="laporan-guru-result"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Pilih bulan dan klik Tampilkan</div></div></div>`);
+}
+
+async function loadLaporanGuru() {
+  const bulan = document.getElementById('laporan-guru-bulan').value;
+  const el    = document.getElementById('laporan-guru-result');
+  if (!bulan) { showToast('Pilih bulan dahulu', 'error'); return; }
+
+  el.innerHTML = '<div class="loader"><div class="spinner"></div> Memuat laporan...</div>';
+  try {
+    const res  = await apiGet('get_report_guru', { bulan });
+    const data = res.data || [];
+    if (data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Tidak ada data periode ini</div></div>'; return; }
+
+    const namaBulan = BULAN[parseInt(bulan.split('-')[1])-1] + ' ' + bulan.split('-')[0];
+    el.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Rekap Kehadiran Guru — ${namaBulan}</div>
+        <span style="font-size:13px;color:var(--text-muted)">${data.length} guru/tendik</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>NIG</th><th>Nama</th><th>Jabatan</th><th>Tipe</th><th style="color:var(--primary)">Hadir</th><th style="color:var(--warn)">Terlambat</th><th style="color:var(--info)">Izin</th><th style="color:var(--purple)">Sakit</th><th style="color:var(--danger)">Alpa</th><th>Pulang Awal</th><th>Total</th><th>%</th></tr></thead>
+          <tbody>
+            ${data.map((d,i) => {
+              const total  = d.hadir + d.terlambat + d.izin + d.sakit + d.alpa;
+              const persen = total > 0 ? Math.round((d.hadir + d.terlambat) / total * 100) : 0;
+              const pColor = persen>=80 ? 'var(--primary)' : persen>=60 ? 'var(--warn)' : 'var(--danger)';
+              return `<tr>
+                <td class="td-muted">${i+1}</td>
+                <td class="td-muted">${esc(d.nig)}</td>
+                <td class="td-name">${esc(d.nama)}</td>
+                <td class="td-muted">${esc(d.jabatan||'-')}</td>
+                <td class="td-muted">${esc(d.tipe)}</td>
+                <td style="color:var(--primary);font-weight:700">${d.hadir}</td>
+                <td style="color:var(--warn);font-weight:700">${d.terlambat}</td>
+                <td style="color:var(--info)">${d.izin}</td>
+                <td style="color:var(--purple)">${d.sakit}</td>
+                <td style="color:var(--danger)">${d.alpa}</td>
+                <td style="color:var(--warn)">${d.pulangAwal}</td>
+                <td>${total}</td>
+                <td><span style="font-weight:700;color:${pColor}">${persen}%</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  } catch(e) { el.innerHTML = `<div class="loader">Error: ${esc(e.message)}</div>`; }
+}
+
+async function exportLaporanGuru() {
+  const bulan = document.getElementById('laporan-guru-bulan')?.value;
+  if (!bulan) { showToast('Pilih bulan dahulu', 'error'); return; }
+  try {
+    const res  = await apiGet('get_report_guru', { bulan });
+    const data = (res.data || []).map((d,i) => ({
+      'No': i+1, 'NIG': d.nig, 'Nama': d.nama, 'Jabatan': d.jabatan, 'Tipe': d.tipe,
+      'Hadir': d.hadir, 'Terlambat': d.terlambat, 'Izin': d.izin,
+      'Sakit': d.sakit, 'Alpa': d.alpa, 'Pulang Awal': d.pulangAwal
+    }));
+    exportToExcel(data, `Rekap_Guru_${bulan}`);
+  } catch(e) { showToast('❌ Gagal export', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// REKAP WALI KELAS (BARU - Format tabel tanggal × nama)
+// ══════════════════════════════════════════════════════════════
+async function renderWaliKelas() {
+  const now         = new Date();
+  const bulanDefault = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  showContent(`
+  <div class="page-header">
+    <div class="page-title">📋 Rekap Wali Kelas</div>
+    <div class="page-sub">Format tabel daftar hadir bulanan untuk wali kelas</div>
+  </div>
+  <div class="filter-bar">
+    <input type="month" id="wali-bulan" class="filter-select" value="${bulanDefault}" />
+    <select id="wali-kelas" class="filter-select">
+      <option value="">-- Pilih Kelas --</option>
+      ${APP_CONFIG.KELAS_LIST.map(k=>`<option value="${k}">Kelas ${k}</option>`).join('')}
+    </select>
+    <button class="btn btn-primary" onclick="loadWaliKelas()">🔍 Tampilkan</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+  </div>
+  <div id="wali-result"><div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Pilih bulan dan kelas, lalu klik Tampilkan</div></div></div>`);
+}
+
+async function loadWaliKelas() {
+  const bulan = document.getElementById('wali-bulan').value;
+  const kelas = document.getElementById('wali-kelas').value;
+  const el    = document.getElementById('wali-result');
+  if (!bulan || !kelas) { showToast('Pilih bulan dan kelas dahulu', 'error'); return; }
+
+  el.innerHTML = '<div class="loader"><div class="spinner"></div> Memuat rekap wali kelas...</div>';
+  try {
+    const res       = await apiGet('get_summary_wali', { bulan, kelas });
+    const { siswaList, dates, absenMap } = res;
+    if (siswaList.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Tidak ada siswa di kelas ini</div></div>'; return; }
+
+    const namaBulan = BULAN[parseInt(bulan.split('-')[1])-1] + ' ' + bulan.split('-')[0];
+    const STATUS_CODE = { 'HADIR': 'H', 'TERLAMBAT': 'T', 'IZIN': 'I', 'SAKIT': 'S', 'ALPA': 'A' };
+
+    const theadDates = dates.map(d => {
+      const day = new Date(d + 'T00:00').getDate();
+      return `<th>${day}</th>`;
+    }).join('');
+
+    const tbody = siswaList.map((s, i) => {
+      const cells = dates.map(d => {
+        const status = absenMap[s.nis + '_' + d];
+        const code   = STATUS_CODE[status] || '';
+        return `<td class="wali-${code}">${code}</td>`;
+      }).join('');
+
+      const counts = { H: 0, T: 0, I: 0, S: 0, A: 0 };
+      dates.forEach(d => {
+        const s2 = STATUS_CODE[absenMap[s.nis + '_' + d]];
+        if (s2) counts[s2]++;
+      });
+
+      return `<tr>
+        <td class="td-muted" style="font-size:11px">${i+1}</td>
+        <td class="td-name-cell">${esc(s.nama)}</td>
+        ${cells}
+        <td style="color:var(--primary);font-weight:700;font-size:11px">${counts.H}</td>
+        <td style="color:var(--warn);font-weight:700;font-size:11px">${counts.T}</td>
+        <td style="color:var(--info);font-size:11px">${counts.I}</td>
+        <td style="color:var(--purple);font-size:11px">${counts.S}</td>
+        <td style="color:var(--danger);font-weight:700;font-size:11px">${counts.A}</td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+    <div class="alert-box alert-info">
+      Keterangan: <strong>H</strong> = Hadir, <strong>T</strong> = Terlambat, <strong>I</strong> = Izin, <strong>S</strong> = Sakit, <strong>A</strong> = Alpa, kosong = Belum Ada Data
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Daftar Hadir Kelas ${esc(kelas)} — ${namaBulan}</div>
+        <span style="font-size:13px;color:var(--text-muted)">${siswaList.length} siswa · ${dates.length} hari</span>
+      </div>
+      <div class="table-wrap" style="overflow-x:auto">
+        <table class="wali-table" style="min-width:max-content">
+          <thead>
+            <tr>
+              <th>#</th><th style="text-align:left;min-width:140px">Nama Siswa</th>
+              ${theadDates}
+              <th style="color:var(--primary)">H</th><th style="color:var(--warn)">T</th>
+              <th style="color:var(--info)">I</th><th style="color:var(--purple)">S</th>
+              <th style="color:var(--danger)">A</th>
+            </tr>
+          </thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    </div>`;
+  } catch(e) { el.innerHTML = `<div class="loader">Error: ${esc(e.message)}</div>`; }
+}
+
+// ══════════════════════════════════════════════════════════════
 // DATA SISWA
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 function renderDataSiswa(search = '') {
-  const filtered = search
+  const canEdit   = USER_ROLE === 'TU';
+  const filtered  = search
     ? allStudents.filter(s => s.nama.toLowerCase().includes(search.toLowerCase()) || String(s.nis).includes(search))
     : allStudents;
   const grouped = {};
@@ -969,51 +1092,53 @@ function renderDataSiswa(search = '') {
   const html = `
   <div class="page-header">
     <div class="page-title">📋 Data Siswa</div>
-    <div class="page-sub">${allStudents.length} siswa terdaftar</div>
+    <div class="page-sub">${allStudents.filter(s=>s.status==='AKTIF').length} siswa aktif dari ${allStudents.length} total</div>
   </div>
   <div class="filter-bar">
-    <input id="search-siswa" class="filter-input" type="text" placeholder="🔍 Cari nama atau NIS..." value="${search}" oninput="renderDataSiswa(this.value)" />
-    <button class="btn btn-primary" onclick="showTambahSiswa()">+ Tambah Siswa</button>
+    <input id="search-siswa" class="filter-input" type="text" placeholder="🔍 Cari nama atau NIS..." value="${esc(search)}" oninput="renderDataSiswa(this.value)" />
+    ${canEdit ? `<button class="btn btn-primary" onclick="showTambahSiswa()">+ Tambah Siswa</button>
     <button class="btn btn-secondary" onclick="showImportSiswa()">⬆ Import Excel</button>
-    <button class="btn btn-secondary" onclick="exportDataSiswa()">⬇ Export</button>
+    <button class="btn btn-secondary" onclick="exportDataSiswa()">⬇ Export</button>` : ''}
   </div>
   ${Object.keys(grouped).sort().map(kelas => `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">
-      <div class="card-title">Kelas ${kelas}</div>
+      <div class="card-title">Kelas ${esc(kelas)}</div>
       <span style="font-size:13px;color:var(--text-muted)">${grouped[kelas].length} siswa</span>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>NIS</th><th>Nama</th><th>JK</th><th>Nama Ortu</th><th>No HP Ortu</th><th>Status</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>#</th><th>NIS</th><th>Nama</th><th>JK</th><th>Nama Ortu</th><th>No HP</th><th>Status</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
         <tbody>
           ${grouped[kelas].map((s,i) => `
           <tr>
             <td class="td-muted">${i+1}</td>
-            <td class="td-muted"><code style="font-size:12px">${s.nis}</code></td>
-            <td class="td-name">${s.nama}</td>
-            <td class="td-muted">${s.jenisKelamin||'-'}</td>
-            <td class="td-muted">${s.namaOrtu||'-'}</td>
-            <td class="td-muted">${s.noHpOrtu||'-'}</td>
-            <td>${s.status==='AKTIF'?'<span class="badge badge-hadir">AKTIF</span>':'<span class="badge badge-alpa">NON-AKTIF</span>'}</td>
-            <td style="white-space:nowrap">
-              <button class="btn btn-secondary btn-sm" onclick="showEditSiswa('${s.nis}')">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="hapusSiswa('${s.nis}','${s.nama}')">🗑</button>
-            </td>
+            <td class="td-muted"><code style="font-size:12px">${esc(s.nis)}</code></td>
+            <td class="td-name">${esc(s.nama)}</td>
+            <td class="td-muted">${esc(s.jenisKelamin||'-')}</td>
+            <td class="td-muted">${esc(s.namaOrtu||'-')}</td>
+            <td class="td-muted">${esc(s.noHpOrtu||'-')}</td>
+            <td>${statusSiswaBadge(s.status)}</td>
+            ${canEdit ? `<td style="white-space:nowrap">
+              <button class="btn btn-secondary btn-sm" onclick="showEditSiswa('${esc(s.nis)}')">✏️</button>
+              <button class="btn btn-info btn-sm" onclick="showArchiveSiswa('${esc(s.nis)}','${esc(s.nama)}','${esc(s.status)}')">📁</button>
+              <button class="btn btn-danger btn-sm" onclick="hapusSiswa('${esc(s.nis)}','${esc(s.nama)}')">🗑️</button>
+            </td>` : ''}
           </tr>`).join('')}
         </tbody>
       </table>
     </div>
   </div>`).join('')}
-  ${filtered.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">Tidak ada siswa ditemukan</div></div>' : ''}`;
+  ${Object.keys(grouped).length === 0 ? '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Tidak ada data ditemukan</div></div>' : ''}`;
 
   showContent(html);
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // DATA GURU
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 function renderDataGuru(search = '') {
+  const canEdit  = USER_ROLE === 'TU';
   const filtered = search
     ? allTeachers.filter(t => t.nama.toLowerCase().includes(search.toLowerCase()) || String(t.nig).includes(search))
     : allTeachers;
@@ -1024,29 +1149,29 @@ function renderDataGuru(search = '') {
     <div class="page-sub">${allTeachers.length} guru/tendik terdaftar</div>
   </div>
   <div class="filter-bar">
-    <input id="search-guru" class="filter-input" type="text" placeholder="🔍 Cari nama atau NIG..." value="${search}" oninput="renderDataGuru(this.value)" />
-    <button class="btn btn-primary" onclick="showTambahGuru()">+ Tambah Guru</button>
-    <button class="btn btn-secondary" onclick="exportDataGuru()">⬇ Export</button>
+    <input id="search-guru" class="filter-input" type="text" placeholder="🔍 Cari nama atau NIG..." value="${esc(search)}" oninput="renderDataGuru(this.value)" />
+    ${canEdit ? `<button class="btn btn-primary" onclick="showTambahGuru()">+ Tambah Guru</button>
+    <button class="btn btn-secondary" onclick="exportDataGuru()">⬇ Export</button>` : ''}
   </div>
   <div class="card">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>NIG</th><th>Nama</th><th>Jabatan</th><th>Mata Pelajaran</th><th>JK</th><th>Tipe</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>#</th><th>NIG</th><th>Nama</th><th>Jabatan</th><th>Mapel</th><th>JK</th><th>Tipe</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
         <tbody>
-          ${filtered.length === 0 ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Belum ada data guru</div></div></td></tr>` :
+          ${filtered.length === 0 ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Tidak ada data</div></div></td></tr>` :
             filtered.map((t,i) => `
             <tr>
               <td class="td-muted">${i+1}</td>
-              <td class="td-muted"><code style="font-size:12px">${t.nig}</code></td>
-              <td class="td-name">${t.nama}</td>
-              <td class="td-muted">${t.jabatan||'-'}</td>
-              <td class="td-muted">${t.mapel||'-'}</td>
-              <td class="td-muted">${t.jenisKelamin||'-'}</td>
-              <td><span class="badge ${t.tipe==='Guru'?'badge-hadir':t.tipe==='TU'?'badge-info':'badge-izin'}">${t.tipe||'Guru'}</span></td>
-              <td style="white-space:nowrap">
-                <button class="btn btn-secondary btn-sm" onclick="showEditGuru('${t.nig}')">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="hapusGuru('${t.nig}','${t.nama}')">🗑</button>
-              </td>
+              <td class="td-muted"><code style="font-size:12px">${esc(t.nig)}</code></td>
+              <td class="td-name">${esc(t.nama)}</td>
+              <td class="td-muted">${esc(t.jabatan||'-')}</td>
+              <td class="td-muted">${esc(t.mapel||'-')}</td>
+              <td class="td-muted">${esc(t.jenisKelamin||'-')}</td>
+              <td class="td-muted">${esc(t.tipe||'Guru')}</td>
+              ${canEdit ? `<td style="white-space:nowrap">
+                <button class="btn btn-secondary btn-sm" onclick="showEditGuru('${esc(t.nig)}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="hapusGuru('${esc(t.nig)}','${esc(t.nama)}')">🗑️</button>
+              </td>` : ''}
             </tr>`).join('')}
         </tbody>
       </table>
@@ -1056,289 +1181,509 @@ function renderDataGuru(search = '') {
   showContent(html);
 }
 
-// ══════════════════════════════════════════════════════════
-// PERANGKAT SCANNER
-// ══════════════════════════════════════════════════════════
-async function renderPerangkat() {
-  showContent(`<div class="loader"><div class="spinner"></div> Memuat data perangkat...</div>`);
+// ══════════════════════════════════════════════════════════════
+// HARI LIBUR (BARU)
+// ══════════════════════════════════════════════════════════════
+async function renderHariLibur() {
+  showContent(`<div class="loader"><div class="spinner"></div> Memuat data hari libur...</div>`);
   try {
-    const res  = await apiGet('get_devices');
+    const res  = await apiGet('get_hari_libur');
     const data = res.data || [];
+    const canEdit = USER_ROLE === 'TU';
+
     const html = `
     <div class="page-header">
-      <div class="page-title">📱 Perangkat Scanner</div>
-      <div class="page-sub">Kelola HP yang terdaftar sebagai scanner</div>
+      <div class="page-title">📅 Kalender Hari Libur</div>
+      <div class="page-sub">Kelola hari libur sekolah — berpengaruh pada rekap absensi dan scanner</div>
     </div>
-    <div style="margin-bottom:16px">
-      <button class="btn btn-primary" onclick="showRegisterDevice()">+ Daftarkan HP Baru</button>
+    ${canEdit ? `
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><div class="card-title">+ Tambah Hari Libur</div></div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="margin:0;flex:0 0 180px">
+            <label class="form-label">Tanggal</label>
+            <input type="date" id="hl-tanggal" class="form-input" />
+          </div>
+          <div class="form-group" style="margin:0;flex:1;min-width:200px">
+            <label class="form-label">Keterangan</label>
+            <input type="text" id="hl-ket" class="form-input" placeholder="cth: Hari Raya Idul Fitri" />
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:0" onclick="doAddHariLibur()">+ Tambah</button>
+        </div>
+      </div>
+    </div>` : ''}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 Daftar Hari Libur</div>
+        <span style="font-size:13px;color:var(--text-muted)">${data.length} hari libur terdaftar</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Tanggal</th><th>Hari</th><th>Keterangan</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
+          <tbody>
+            ${data.length === 0 ? `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Belum ada hari libur terdaftar</div></div></td></tr>` :
+              data.map((hl,i) => {
+                const d    = new Date(hl.tanggal + 'T00:00');
+                const hari = HARI[d.getDay()];
+                return `<tr>
+                  <td class="td-muted">${i+1}</td>
+                  <td style="font-weight:600">${esc(hl.tanggal)}</td>
+                  <td class="td-muted">${hari}</td>
+                  <td>${esc(hl.keterangan)}</td>
+                  ${canEdit ? `<td><button class="btn btn-danger btn-sm" onclick="doDeleteHariLibur('${esc(hl.id)}','${esc(hl.tanggal)}')">🗑️ Hapus</button></td>` : ''}
+                </tr>`;
+              }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+    showContent(html);
+  } catch(e) { showContent(`<div class="loader">Error: ${esc(e.message)}</div>`); }
+}
+
+async function doAddHariLibur() {
+  const tanggal = document.getElementById('hl-tanggal').value;
+  const ket     = document.getElementById('hl-ket').value;
+  if (!tanggal) { showToast('Pilih tanggal dahulu', 'error'); return; }
+  try {
+    const res = await apiPost({ action: 'add_hari_libur', tanggal, keterangan: ket });
+    if (res.success) { showToast('✅ Hari libur ditambahkan', 'success'); renderHariLibur(); }
+    else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal menambah', 'error'); }
+}
+
+async function doDeleteHariLibur(id, tanggal) {
+  if (!confirm(`Hapus hari libur tanggal ${tanggal}?`)) return;
+  try {
+    const res = await apiPost({ action: 'delete_hari_libur', id });
+    if (res.success) { showToast('✅ Hari libur dihapus', 'success'); renderHariLibur(); }
+    else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal menghapus', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUDIT LOG (BARU)
+// ══════════════════════════════════════════════════════════════
+async function renderAuditLog() {
+  showContent(`<div class="loader"><div class="spinner"></div> Memuat audit log...</div>`);
+  try {
+    const res  = await apiGet('get_audit_log', { limit: '200' });
+    const data = res.data || [];
+
+    const html = `
+    <div class="page-header">
+      <div class="page-title">📜 Audit Log</div>
+      <div class="page-sub">Riwayat semua perubahan data sistem — ${data.length} entri terbaru</div>
+    </div>
+    <div class="alert-box alert-info" style="margin-bottom:20px">
+      🔒 Log ini mencatat semua perubahan data: siapa yang mengubah, kapan, apa yang berubah. Tidak dapat dihapus atau dimanipulasi.
     </div>
     <div class="card">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Token</th><th>Nama Perangkat</th><th>Lokasi</th><th>Terdaftar</th><th>Status</th><th>Aksi</th></tr></thead>
+          <thead><tr><th>Tanggal</th><th>Jam</th><th>Aksi</th><th>Target</th><th>Sebelum</th><th>Sesudah</th><th>Oleh</th></tr></thead>
           <tbody>
-            ${data.length === 0 ? `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📵</div><div class="empty-state-text">Belum ada perangkat terdaftar</div><div class="empty-state-sub">Klik "Daftarkan HP Baru" untuk memulai</div></div></td></tr>` :
-              data.map(d => `
+            ${data.length === 0 ? `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📜</div><div class="empty-state-text">Belum ada log</div></div></td></tr>` :
+              data.map(log => `
               <tr>
-                <td><code style="font-size:12px;color:var(--primary)">${d.token}</code></td>
-                <td class="td-name">${d.name}</td>
-                <td class="td-muted">${d.location}</td>
-                <td class="td-muted">${d.registered}</td>
-                <td>${d.status==='AKTIF'?'<span class="badge badge-hadir">AKTIF</span>':'<span class="badge badge-alpa">NONAKTIF</span>'}</td>
-                <td>
-                  ${d.status==='AKTIF' ? `<button class="btn btn-danger btn-sm" onclick="nonaktifkanDevice('${d.token}','${d.name}')">🚫 Nonaktifkan</button>` : ''}
-                </td>
+                <td class="td-muted" style="white-space:nowrap">${esc(log.tanggal)}</td>
+                <td class="td-muted" style="white-space:nowrap">${esc(log.jam)}</td>
+                <td><span class="audit-action">${esc(log.aksi)}</span></td>
+                <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis">${esc(log.target)}</td>
+                <td class="td-muted" style="font-size:11px;max-width:100px">${esc(log.sebelum||'-')}</td>
+                <td style="font-size:11px;max-width:100px">${esc(log.sesudah||'-')}</td>
+                <td><span class="header-role-badge role-${esc(log.role)}" style="font-size:10px">${esc(log.role)}</span></td>
               </tr>`).join('')}
           </tbody>
         </table>
       </div>
-    </div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-header"><div class="card-title">ℹ️ Cara Daftarkan HP Baru</div></div>
-      <div class="card-body" style="color:var(--text-2);font-size:14px;line-height:1.7">
-        <ol style="padding-left:20px">
-          <li>Klik tombol <strong>"Daftarkan HP Baru"</strong> di atas</li>
-          <li>Beri nama dan klik <strong>Generate Token</strong></li>
-          <li>Salin token yang muncul</li>
-          <li>Buka <strong>aplikasi scanner</strong> di HP sekolah</li>
-          <li>Masukkan token ke kolom registrasi</li>
-          <li>HP siap digunakan sebagai scanner!</li>
-        </ol>
-      </div>
     </div>`;
+
     showContent(html);
-  } catch(e) { showContent('<div class="loader">Error: ' + e.message + '</div>'); }
+  } catch(e) { showContent(`<div class="loader">Error: ${esc(e.message)}</div>`); }
 }
 
-async function showRegisterDevice() {
+// ══════════════════════════════════════════════════════════════
+// PERANGKAT SCANNER
+// ══════════════════════════════════════════════════════════════
+async function renderPerangkat() {
+  showContent(`<div class="loader"><div class="spinner"></div> Memuat perangkat...</div>`);
+  try {
+    const res  = await apiGet('get_devices');
+    const data = res.data || [];
+    const canEdit = USER_ROLE === 'TU';
+
+    const html = `
+    <div class="page-header">
+      <div class="page-title">📱 Perangkat Scanner</div>
+      <div class="page-sub">Kelola HP scanner yang terdaftar</div>
+    </div>
+    ${canEdit ? `<div class="filter-bar"><button class="btn btn-primary" onclick="showDaftarDevice()">+ Daftarkan HP Baru</button></div>` : ''}
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Token</th><th>Nama Device</th><th>Lokasi</th><th>Tanggal Daftar</th><th>Status</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
+          <tbody>
+            ${data.length === 0 ? `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📱</div><div class="empty-state-text">Belum ada perangkat terdaftar</div></div></td></tr>` :
+              data.map((d,i) => `
+              <tr>
+                <td class="td-muted">${i+1}</td>
+                <td><code style="font-size:11px">${esc(d.token)}</code></td>
+                <td class="td-name">${esc(d.name)}</td>
+                <td class="td-muted">${esc(d.location)}</td>
+                <td class="td-muted">${esc(d.registered)}</td>
+                <td>${d.status==='AKTIF' ? '<span class="badge badge-hadir">AKTIF</span>' : '<span class="badge badge-nonaktif">NONAKTIF</span>'}</td>
+                ${canEdit && d.status==='AKTIF' ? `<td><button class="btn btn-danger btn-sm" onclick="doNonaktifDevice('${esc(d.token)}')">🚫 Nonaktifkan</button></td>` : canEdit ? '<td>-</td>' : ''}
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+    showContent(html);
+  } catch(e) { showContent(`<div class="loader">Error: ${esc(e.message)}</div>`); }
+}
+
+function showDaftarDevice() {
   showModal(`
-  <div class="modal-title">📱 Daftarkan HP Baru</div>
+  <div class="modal-title">📱 Daftarkan HP Scanner Baru</div>
   <div class="form-group">
     <label class="form-label">Nama Perangkat</label>
-    <input id="md-dev-name" class="form-input" placeholder="cth: HP Scanner Gerbang" />
+    <input id="md-device-name" class="form-input" placeholder="cth: HP Scanner Gerbang Utama" />
   </div>
   <div class="form-group">
     <label class="form-label">Lokasi</label>
-    <input id="md-dev-loc" class="form-input" placeholder="cth: Pintu Masuk Kelas 7" />
+    <input id="md-device-loc" class="form-input" placeholder="cth: Pintu Masuk Sekolah" value="Pintu Masuk Sekolah" />
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doRegisterDevice()">Generate Token</button>
+    <button class="btn btn-primary" onclick="doDaftarDevice()">Generate Token</button>
   </div>`);
 }
 
-async function doRegisterDevice() {
-  const name = document.getElementById('md-dev-name').value.trim();
-  const loc  = document.getElementById('md-dev-loc').value.trim();
+async function doDaftarDevice() {
+  const name = document.getElementById('md-device-name').value.trim();
+  const loc  = document.getElementById('md-device-loc').value.trim();
   if (!name) { showToast('Masukkan nama perangkat', 'error'); return; }
   try {
-    const res = await apiPost({ action: 'register_device', name, location: loc || 'Sekolah' });
+    const res = await apiPost({ action: 'register_device', name, location: loc });
     if (res.success) {
       closeModal();
-      await renderPerangkat();
+      showToast('✅ Token: ' + res.token, 'success');
       showModal(`
       <div class="modal-title">✅ Token Berhasil Dibuat</div>
-      <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px">Salin token berikut dan masukkan ke aplikasi scanner di HP sekolah:</p>
-      <div style="background:var(--surface2);border:2px dashed var(--primary);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px">
-        <div style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:0.1em;font-family:monospace">${res.token}</div>
-      </div>
-      <button class="btn btn-primary" style="width:100%" onclick="navigator.clipboard.writeText('${res.token}').then(()=>showToast('Token disalin!','success'))">📋 Salin Token</button>
-      <div class="form-actions" style="margin-top:10px"><button class="btn btn-secondary" onclick="closeModal()">Tutup</button></div>`);
-    } else {
-      showToast('❌ ' + res.message, 'error');
-    }
-  } catch { showToast('❌ Gagal terhubung ke server', 'error'); }
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Berikan token ini ke petugas yang akan menyiapkan HP scanner.</p>
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;font-family:monospace;font-size:18px;text-align:center;letter-spacing:0.1em;color:var(--primary)">${esc(res.token)}</div>
+      <p class="form-hint" style="text-align:center;margin-top:12px">⚠️ Salin dan simpan token ini! Tidak bisa ditampilkan lagi.</p>
+      <div class="form-actions"><button class="btn btn-primary" onclick="closeModal();renderPerangkat()">OK, Tutup</button></div>`);
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal mendaftarkan', 'error'); }
 }
 
-async function nonaktifkanDevice(token, name) {
-  if (!confirm(`Nonaktifkan perangkat "${name}"?\nHP ini tidak akan bisa scan setelah dinonaktifkan.`)) return;
+async function doNonaktifDevice(token) {
+  if (!confirm('Nonaktifkan perangkat ini? HP tidak bisa scan sampai didaftarkan ulang.')) return;
   try {
     const res = await apiPost({ action: 'deactivate_device', token });
-    if (res.success) { showToast('✅ Perangkat dinonaktifkan', 'success'); renderPerangkat(); }
+    if (res.success) { showToast('✅ Device dinonaktifkan', 'success'); renderPerangkat(); }
     else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal', 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // PENGATURAN
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 async function renderPengaturan() {
-  showContent(`<div class="loader"><div class="spinner"></div> Memuat pengaturan...</div>`);
+  showContent(`<div class="loader"><div class="spinner"></div> Memuat konfigurasi...</div>`);
   try {
     const res    = await apiGet('get_config');
     const config = res.data || {};
+
     const html = `
     <div class="page-header">
       <div class="page-title">⚙️ Pengaturan Sistem</div>
-      <div class="page-sub">Konfigurasi jam masuk dan toleransi keterlambatan</div>
+      <div class="page-sub">Konfigurasi jam, toleransi, dan informasi sekolah</div>
     </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">🕐 Konfigurasi Waktu</div></div>
+    <div class="alert-box alert-info" style="margin-bottom:20px">
+      🔐 PIN (TU/Kepsek/Wali) dikelola secara terpisah di bagian bawah halaman ini.
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><div class="card-title">⏰ Jam & Toleransi</div></div>
       <div class="card-body">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="form-group">
             <label class="form-label">Jam Masuk Siswa</label>
-            <input id="cfg-jam-siswa" class="form-input" type="time" value="${config['JAM_MASUK_SISWA']||'06:40'}" />
+            <input id="cfg-jam-siswa" class="form-input" type="time" value="${esc(config.JAM_MASUK_SISWA||'06:40')}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Toleransi Terlambat Siswa (menit)</label>
-            <input id="cfg-tol-siswa" class="form-input" type="number" min="0" max="60" value="${config['TOLERANSI_SISWA']||10}" />
+            <label class="form-label">Toleransi Siswa (menit)</label>
+            <input id="cfg-tol-siswa" class="form-input" type="number" value="${esc(config.TOLERANSI_SISWA||'10')}" min="0" max="60"/>
           </div>
           <div class="form-group">
-            <label class="form-label">Jam Masuk Guru/Tendik</label>
-            <input id="cfg-jam-guru" class="form-input" type="time" value="${config['JAM_MASUK_GURU']||'06:30'}" />
+            <label class="form-label">Jam Masuk Guru</label>
+            <input id="cfg-jam-guru" class="form-input" type="time" value="${esc(config.JAM_MASUK_GURU||'06:30')}" />
           </div>
           <div class="form-group">
-            <label class="form-label">Toleransi Terlambat Guru (menit)</label>
-            <input id="cfg-tol-guru" class="form-input" type="number" min="0" max="60" value="${config['TOLERANSI_GURU']||15}" />
+            <label class="form-label">Toleransi Guru (menit)</label>
+            <input id="cfg-tol-guru" class="form-input" type="number" value="${esc(config.TOLERANSI_GURU||'15')}" min="0" max="60"/>
           </div>
           <div class="form-group">
             <label class="form-label">Jam Pulang Guru</label>
-            <input id="cfg-jam-pulang" class="form-input" type="time" value="${config['JAM_PULANG_GURU']||'15:30'}" />
+            <input id="cfg-pulang-guru" class="form-input" type="time" value="${esc(config.JAM_PULANG_GURU||'15:30')}" />
           </div>
           <div class="form-group">
             <label class="form-label">Tahun Ajaran</label>
-            <input id="cfg-ta" class="form-input" type="text" value="${config['TAHUN_AJARAN']||'2026/2027'}" />
+            <input id="cfg-ta" class="form-input" type="text" value="${esc(config.TAHUN_AJARAN||'2026/2027')}" />
           </div>
         </div>
-        <button class="btn btn-primary" onclick="simpanPengaturan()">💾 Simpan Pengaturan</button>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="doSaveConfig()">💾 Simpan Konfigurasi</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">🔐 Ganti PIN</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">PIN disimpan aman di server (Google Sheets). Tidak terlihat di kode frontend.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">PIN TU (Full Access)</label>
+            <input id="pin-tu" class="form-input" type="password" placeholder="PIN baru..." />
+            <div class="form-hint">Minimal 4 karakter</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PIN Kepala Sekolah</label>
+            <input id="pin-kepsek" class="form-input" type="password" placeholder="PIN baru..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">PIN Wali Kelas</label>
+            <input id="pin-wali" class="form-input" type="password" placeholder="PIN baru..." />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-warn" onclick="doSavePIN('PIN_TU','pin-tu')">Ganti PIN TU</button>
+          <button class="btn btn-info" onclick="doSavePIN('PIN_KEPSEK','pin-kepsek')">Ganti PIN Kepsek</button>
+          <button class="btn btn-secondary" onclick="doSavePIN('PIN_WALI','pin-wali')">Ganti PIN Wali</button>
+        </div>
       </div>
     </div>`;
+
     showContent(html);
-  } catch(e) { showContent('<div class="loader">Error: ' + e.message + '</div>'); }
+  } catch(e) { showContent(`<div class="loader">Error: ${esc(e.message)}</div>`); }
 }
 
-async function simpanPengaturan() {
+async function doSaveConfig() {
   try {
-    const res = await apiPost({ action: 'update_config', updates: {
-      'JAM_MASUK_SISWA':  document.getElementById('cfg-jam-siswa').value,
-      'TOLERANSI_SISWA':  document.getElementById('cfg-tol-siswa').value,
-      'JAM_MASUK_GURU':   document.getElementById('cfg-jam-guru').value,
-      'TOLERANSI_GURU':   document.getElementById('cfg-tol-guru').value,
-      'JAM_PULANG_GURU':  document.getElementById('cfg-jam-pulang').value,
-      'TAHUN_AJARAN':     document.getElementById('cfg-ta').value
-    }});
-    if (res.success) showToast('✅ Pengaturan tersimpan', 'success');
+    const updates = {
+      JAM_MASUK_SISWA:  document.getElementById('cfg-jam-siswa').value,
+      TOLERANSI_SISWA:  document.getElementById('cfg-tol-siswa').value,
+      JAM_MASUK_GURU:   document.getElementById('cfg-jam-guru').value,
+      TOLERANSI_GURU:   document.getElementById('cfg-tol-guru').value,
+      JAM_PULANG_GURU:  document.getElementById('cfg-pulang-guru').value,
+      TAHUN_AJARAN:     document.getElementById('cfg-ta').value
+    };
+    const res = await apiPost({ action: 'update_config', updates });
+    if (res.success) showToast('✅ Konfigurasi disimpan', 'success');
     else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal menyimpan', 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════
-// MODAL HELPERS
-// ══════════════════════════════════════════════════════════
-function showTambahSiswa() {
+async function doSavePIN(pinKey, inputId) {
+  const newPin = document.getElementById(inputId).value;
+  if (!newPin) { showToast('Masukkan PIN baru', 'error'); return; }
+  if (newPin.length < 4) { showToast('PIN minimal 4 karakter', 'error'); return; }
+  if (!confirm(`Ganti ${pinKey}? Pastikan kamu ingat PIN baru ini!`)) return;
+  try {
+    const res = await apiPost({ action: 'change_pin', pinKey, newPin });
+    if (res.success) {
+      showToast('✅ PIN berhasil diubah', 'success');
+      document.getElementById(inputId).value = '';
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal mengubah PIN', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODALS — INPUT MANUAL SISWA (BUGFIX)
+// ══════════════════════════════════════════════════════════════
+function showInputManualSiswa(tanggal) {
   showModal(`
-  <div class="modal-title">+ Tambah Siswa</div>
-  <div class="form-group"><label class="form-label">NIS</label><input id="md-nis" class="form-input" placeholder="Nomor Induk Siswa" /></div>
-  <div class="form-group"><label class="form-label">Nama Lengkap</label><input id="md-nama-siswa" class="form-input" placeholder="Nama lengkap siswa" /></div>
-  <div class="form-group"><label class="form-label">Kelas</label>
-    <select id="md-kelas" class="form-select">
-      ${APP_CONFIG.KELAS_LIST.map(k=>`<option value="${k}">Kelas ${k}</option>`).join('')}
+  <div class="modal-title">📝 Input Absen Manual — Siswa</div>
+  <div class="form-group">
+    <label class="form-label">Pilih Siswa</label>
+    <select id="md-nis-manual" class="form-select">
+      ${allStudents.filter(s=>s.status==='AKTIF').map(s=>`<option value="${esc(s.nis)}|${esc(s.nama)}|${esc(s.kelas)}">${esc(s.nama)} (Kelas ${esc(s.kelas)})</option>`).join('')}
     </select>
   </div>
-  <div class="form-group"><label class="form-label">Jenis Kelamin</label>
-    <select id="md-jk" class="form-select"><option value="Perempuan">Perempuan</option><option value="Laki-laki">Laki-laki</option></select>
+  <div class="form-group">
+    <label class="form-label">Status</label>
+    <select id="md-status-manual" class="form-select">
+      <option value="HADIR">HADIR</option>
+      <option value="IZIN">IZIN</option>
+      <option value="SAKIT">SAKIT</option>
+      <option value="ALPA">ALPA</option>
+    </select>
   </div>
-  <div class="form-group"><label class="form-label">Nama Orang Tua</label><input id="md-ortu" class="form-input" placeholder="Opsional" /></div>
-  <div class="form-group"><label class="form-label">No HP Orang Tua</label><input id="md-hp" class="form-input" placeholder="Opsional" type="tel" /></div>
+  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-manual" class="form-input" placeholder="opsional" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doTambahSiswa()">Simpan</button>
+    <button class="btn btn-primary" onclick="doInputManualSiswa('${tanggal}')">Simpan</button>
   </div>`);
 }
 
-async function doTambahSiswa() {
-  const data = {
-    action: 'add_student',
-    nis: document.getElementById('md-nis').value.trim(),
-    nama: document.getElementById('md-nama-siswa').value.trim(),
-    kelas: document.getElementById('md-kelas').value,
-    jenisKelamin: document.getElementById('md-jk').value,
-    namaOrtu: document.getElementById('md-ortu').value.trim(),
-    noHpOrtu: document.getElementById('md-hp').value.trim()
-  };
-  if (!data.nis || !data.nama) { showToast('NIS dan Nama wajib diisi', 'error'); return; }
+async function doInputManualSiswa(tanggal) {
+  const val    = document.getElementById('md-nis-manual').value.split('|');
+  const nis    = val[0], nama = val[1], kelas = val[2];
+  const status = document.getElementById('md-status-manual').value;
+  const ket    = document.getElementById('md-ket-manual').value;
   try {
-    const res = await apiPost(data);
+    // Gunakan action 'add_attendance' yang benar (bukan update_attendance)
+    const res = await apiPost({ action: 'add_attendance', tanggal, nis, nama, kelas, status, keterangan: ket });
     if (res.success) {
-      closeModal(); showToast('✅ Siswa ditambahkan', 'success');
-      const studentsRes = await apiGet('get_students');
-      allStudents = studentsRes.data || [];
-      renderDataSiswa();
+      closeModal();
+      showToast('✅ ' + (res.message || 'Absensi tersimpan'), 'success');
+      renderAbsenSiswa(tanggal);
     } else showToast('❌ ' + res.message, 'error');
-  } catch { showToast('❌ Gagal', 'error'); }
+  } catch { showToast('❌ Gagal menyimpan', 'error'); }
 }
 
-function showTambahGuru() {
+function showInputManualSiswaFor(tanggal, nis, nama, kelas) {
   showModal(`
-  <div class="modal-title">+ Tambah Guru/Tendik</div>
-  <div class="form-group"><label class="form-label">NIG / NIP</label><input id="md-nig" class="form-input" placeholder="Nomor Induk Guru" /></div>
-  <div class="form-group"><label class="form-label">Nama Lengkap</label><input id="md-nama-guru" class="form-input" placeholder="Nama lengkap" /></div>
-  <div class="form-group"><label class="form-label">Jabatan</label><input id="md-jabatan" class="form-input" placeholder="cth: Wali Kelas VII, Kepala Sekolah" /></div>
-  <div class="form-group"><label class="form-label">Mata Pelajaran</label><input id="md-mapel" class="form-input" placeholder="Opsional" /></div>
-  <div class="form-group"><label class="form-label">Jenis Kelamin</label>
-    <select id="md-jk-guru" class="form-select"><option value="Perempuan">Perempuan</option><option value="Laki-laki">Laki-laki</option></select>
+  <div class="modal-title">📝 Input Absen — ${esc(nama)}</div>
+  <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Kelas ${esc(kelas)} · NIS: ${esc(nis)}</p>
+  <div class="form-group">
+    <label class="form-label">Status</label>
+    <select id="md-status-for" class="form-select">
+      <option value="HADIR">HADIR</option>
+      <option value="IZIN">IZIN</option>
+      <option value="SAKIT">SAKIT</option>
+      <option value="ALPA" selected>ALPA</option>
+      <option value="TERLAMBAT">TERLAMBAT</option>
+    </select>
   </div>
-  <div class="form-group"><label class="form-label">Tipe</label>
-    <select id="md-tipe" class="form-select"><option value="Guru">Guru</option><option value="TU">Tata Usaha</option><option value="Tendik">Tendik</option></select>
-  </div>
+  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-for" class="form-input" placeholder="opsional" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doTambahGuru()">Simpan</button>
+    <button class="btn btn-primary" onclick="doInputForSiswa('${tanggal}','${esc(nis)}','${esc(nama)}','${esc(kelas)}')">Simpan</button>
   </div>`);
 }
 
-async function doTambahGuru() {
-  const data = {
-    action: 'add_teacher',
-    nig: document.getElementById('md-nig').value.trim(),
-    nama: document.getElementById('md-nama-guru').value.trim(),
-    jabatan: document.getElementById('md-jabatan').value.trim(),
-    mapel: document.getElementById('md-mapel').value.trim(),
-    jenisKelamin: document.getElementById('md-jk-guru').value,
-    tipe: document.getElementById('md-tipe').value
-  };
-  if (!data.nig || !data.nama) { showToast('NIG dan Nama wajib diisi', 'error'); return; }
+async function doInputForSiswa(tanggal, nis, nama, kelas) {
+  const status = document.getElementById('md-status-for').value;
+  const ket    = document.getElementById('md-ket-for').value;
   try {
-    const res = await apiPost(data);
+    // BUGFIX: gunakan action 'add_attendance' yang membuat record baru jika belum ada
+    const res = await apiPost({ action: 'add_attendance', tanggal, nis, nama, kelas, status, keterangan: ket });
     if (res.success) {
-      closeModal(); showToast('✅ Guru ditambahkan', 'success');
-      const teachersRes = await apiGet('get_teachers');
-      allTeachers = teachersRes.data || [];
-      renderDataGuru();
+      closeModal();
+      showToast('✅ Absensi tersimpan', 'success');
+      renderAbsenSiswa(tanggal);
     } else showToast('❌ ' + res.message, 'error');
-  } catch { showToast('❌ Gagal', 'error'); }
+  } catch { showToast('❌ Gagal menyimpan', 'error'); }
 }
 
-async function hapusSiswa(nis, nama) {
-  if (!confirm(`Hapus siswa "${nama}" (NIS: ${nis})?\nData absensinya tidak akan ikut terhapus.`)) return;
-  try {
-    const res = await apiPost({ action: 'delete_student', nis });
-    if (res.success) {
-      showToast('✅ Siswa dihapus', 'success');
-      const r = await apiGet('get_students');
-      allStudents = r.data || [];
-      renderDataSiswa();
-    } else showToast('❌ ' + res.message, 'error');
-  } catch { showToast('❌ Gagal', 'error'); }
+async function inputAlpaAll(tanggal, kelas) {
+  const sudahNIS = new Set(todayAbsence.siswa.map(a => String(a.nis)));
+  const belum    = allStudents.filter(s => !sudahNIS.has(String(s.nis)) && s.status === 'AKTIF' && (!kelas || s.kelas === kelas));
+  if (belum.length === 0) { showToast('Semua siswa sudah absen', 'success'); return; }
+  if (!confirm(`Tandai ${belum.length} siswa sebagai ALPA untuk tanggal ${tanggal}?`)) return;
+
+  let success = 0;
+  for (const s of belum) {
+    try {
+      const res = await apiPost({ action: 'add_attendance', tanggal, nis: s.nis, nama: s.nama, kelas: s.kelas, status: 'ALPA', keterangan: 'Input massal' });
+      if (res.success) success++;
+    } catch {}
+  }
+  showToast(`✅ ${success} siswa ditandai ALPA`, 'success');
+  renderAbsenSiswa(tanggal, kelas);
 }
 
-async function hapusGuru(nig, nama) {
-  if (!confirm(`Hapus guru "${nama}" (NIG: ${nig})?`)) return;
-  try {
-    const res = await apiPost({ action: 'delete_teacher', nig });
-    if (res.success) {
-      showToast('✅ Guru dihapus', 'success');
-      const r = await apiGet('get_teachers');
-      allTeachers = r.data || [];
-      renderDataGuru();
-    } else showToast('❌ ' + res.message, 'error');
-  } catch { showToast('❌ Gagal', 'error'); }
+// ══════════════════════════════════════════════════════════════
+// MODALS — INPUT MANUAL GURU (BUGFIX - Diimplementasi penuh)
+// ══════════════════════════════════════════════════════════════
+function showInputManualGuru(tanggal) {
+  showModal(`
+  <div class="modal-title">📝 Input Absen Manual — Guru/Tendik</div>
+  <div class="form-group">
+    <label class="form-label">Pilih Guru/Tendik</label>
+    <select id="md-nig-manual" class="form-select">
+      ${allTeachers.map(t=>`<option value="${esc(t.nig)}|${esc(t.nama)}">${esc(t.nama)} (${esc(t.tipe||'Guru')})</option>`).join('')}
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Status Kehadiran</label>
+    <select id="md-status-guru-manual" class="form-select">
+      <option value="HADIR">HADIR</option>
+      <option value="TERLAMBAT">TERLAMBAT</option>
+      <option value="IZIN">IZIN</option>
+      <option value="SAKIT">SAKIT</option>
+      <option value="ALPA">ALPA</option>
+    </select>
+  </div>
+  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-guru-manual" class="form-input" placeholder="opsional" /></div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+    <button class="btn btn-primary" onclick="doInputManualGuru('${tanggal}')">Simpan</button>
+  </div>`);
 }
 
+async function doInputManualGuru(tanggal) {
+  const val       = document.getElementById('md-nig-manual').value.split('|');
+  const nig       = val[0], nama = val[1];
+  const statusMasuk = document.getElementById('md-status-guru-manual').value;
+  const ket         = document.getElementById('md-ket-guru-manual').value;
+  try {
+    const res = await apiPost({ action: 'add_attendance_guru', tanggal, nig, nama, statusMasuk, keterangan: ket });
+    if (res.success) {
+      closeModal();
+      showToast('✅ ' + (res.message || 'Absensi guru tersimpan'), 'success');
+      renderAbsenGuru(tanggal);
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal menyimpan', 'error'); }
+}
+
+function showInputManualGuruFor(tanggal, nig, nama) {
+  showModal(`
+  <div class="modal-title">📝 Input Absen — ${esc(nama)}</div>
+  <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">NIG: ${esc(nig)}</p>
+  <div class="form-group">
+    <label class="form-label">Status Kehadiran</label>
+    <select id="md-status-guru-for" class="form-select">
+      <option value="HADIR">HADIR</option>
+      <option value="TERLAMBAT">TERLAMBAT</option>
+      <option value="IZIN">IZIN</option>
+      <option value="SAKIT">SAKIT</option>
+      <option value="ALPA" selected>ALPA</option>
+    </select>
+  </div>
+  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-guru-for" class="form-input" placeholder="opsional" /></div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+    <button class="btn btn-primary" onclick="doInputForGuru('${tanggal}','${esc(nig)}','${esc(nama)}')">Simpan</button>
+  </div>`);
+}
+
+async function doInputForGuru(tanggal, nig, nama) {
+  const statusMasuk = document.getElementById('md-status-guru-for').value;
+  const ket         = document.getElementById('md-ket-guru-for').value;
+  try {
+    const res = await apiPost({ action: 'add_attendance_guru', tanggal, nig, nama, statusMasuk, keterangan: ket });
+    if (res.success) {
+      closeModal();
+      showToast('✅ Absensi guru tersimpan', 'success');
+      renderAbsenGuru(tanggal);
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal menyimpan', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODALS — EDIT ABSEN
+// ══════════════════════════════════════════════════════════════
 function editAbsen(id, tipe, nama, statusLama) {
   showModal(`
-  <div class="modal-title">✏️ Edit Absensi — ${nama}</div>
+  <div class="modal-title">✏️ Edit Absensi — ${esc(nama)}</div>
   <div class="form-group">
     <label class="form-label">Status</label>
     <select id="md-edit-status" class="form-select">
@@ -1351,7 +1696,7 @@ function editAbsen(id, tipe, nama, statusLama) {
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doEditAbsen('${id}','${tipe}')">Simpan</button>
+    <button class="btn btn-primary" onclick="doEditAbsen('${esc(id)}','${tipe}')">Simpan</button>
   </div>`);
 }
 
@@ -1361,116 +1706,298 @@ async function doEditAbsen(id, tipe) {
   try {
     const res = await apiPost({ action: 'update_attendance', id, tipe, status, keterangan: ket });
     if (res.success) {
-      closeModal(); showToast('✅ Data absensi diperbarui', 'success');
+      closeModal();
+      showToast('✅ Data absensi diperbarui', 'success');
       tipe === 'siswa' ? renderAbsenSiswa() : renderAbsenGuru();
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal', 'error'); }
 }
 
-function showInputManualSiswa(tanggal) {
+function editAbsenGuru(id, nama, statusLama) {
   showModal(`
-  <div class="modal-title">📝 Input Absen Manual — Siswa</div>
+  <div class="modal-title">✏️ Edit Absensi Guru — ${esc(nama)}</div>
   <div class="form-group">
-    <label class="form-label">Pilih Siswa</label>
-    <select id="md-nis-manual" class="form-select">
-      ${allStudents.map(s=>`<option value="${s.nis}|${s.nama}|${s.kelas}">${s.nama} (Kelas ${s.kelas})</option>`).join('')}
+    <label class="form-label">Status Masuk</label>
+    <select id="md-edit-guru-status" class="form-select">
+      ${['HADIR','TERLAMBAT','IZIN','SAKIT','ALPA'].map(s=>`<option value="${s}" ${s===statusLama?'selected':''}>${s}</option>`).join('')}
     </select>
   </div>
   <div class="form-group">
-    <label class="form-label">Status</label>
-    <select id="md-status-manual" class="form-select">
-      ${['HADIR','IZIN','SAKIT','ALPA'].map(s=>`<option value="${s}">${s}</option>`).join('')}
-    </select>
+    <label class="form-label">Keterangan</label>
+    <input id="md-edit-guru-ket" class="form-input" placeholder="opsional" />
   </div>
-  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-manual" class="form-input" placeholder="opsional" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doInputManualSiswa('${tanggal}')">Simpan</button>
+    <button class="btn btn-primary" onclick="doEditAbsenGuru('${esc(id)}')">Simpan</button>
   </div>`);
 }
 
-function showInputManualSiswaFor(tanggal, nis, nama, kelas) {
-  showModal(`
-  <div class="modal-title">📝 Input Absen — ${nama}</div>
-  <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Kelas ${kelas} · NIS: ${nis}</p>
-  <div class="form-group">
-    <label class="form-label">Status</label>
-    <select id="md-status-for" class="form-select">
-      ${['HADIR','IZIN','SAKIT','ALPA','TERLAMBAT'].map(s=>`<option value="${s}">${s}</option>`).join('')}
-    </select>
-  </div>
-  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-for" class="form-input" placeholder="opsional" /></div>
-  <div class="form-actions">
-    <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doInputForSiswa('${tanggal}','${nis}','${nama}','${kelas}')">Simpan</button>
-  </div>`);
-}
-
-async function doInputForSiswa(tanggal, nis, nama, kelas) {
-  const status = document.getElementById('md-status-for').value;
-  const ket    = document.getElementById('md-ket-for').value;
-  const jam    = new Date().toTimeString().slice(0,8);
+async function doEditAbsenGuru(id) {
+  const statusMasuk = document.getElementById('md-edit-guru-status').value;
+  const ket         = document.getElementById('md-edit-guru-ket').value;
   try {
-    // Langsung POST ke backend dengan aksi scan (manual override)
-    const res = await apiPost({ action: 'update_attendance', id: 'MANUAL-'+Date.now(), tipe: 'siswa',
-      status, keterangan: ket });
-    // Fallback: simpan langsung via pseudo-scan
-    closeModal(); showToast('✅ Absensi tersimpan', 'success');
-    renderAbsenSiswa(tanggal);
+    const res = await apiPost({ action: 'update_attendance', id, tipe: 'guru', statusMasuk, keterangan: ket });
+    if (res.success) {
+      closeModal();
+      showToast('✅ Data absensi guru diperbarui', 'success');
+      renderAbsenGuru();
+    } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal', 'error'); }
 }
 
-function showInputManualGuru(tanggal) {
-  showModal(`
-  <div class="modal-title">📝 Input Absen Manual — Guru</div>
-  <div class="form-group">
-    <label class="form-label">Pilih Guru/Tendik</label>
-    <select id="md-nig-manual" class="form-select">
-      ${allTeachers.map(t=>`<option value="${t.nig}">${t.nama} (${t.tipe||'Guru'})</option>`).join('')}
-    </select>
-  </div>
-  <div class="form-group">
-    <label class="form-label">Status</label>
-    <select id="md-status-guru-manual" class="form-select">
-      ${['HADIR','IZIN','SAKIT','ALPA','TERLAMBAT'].map(s=>`<option value="${s}">${s}</option>`).join('')}
-    </select>
-  </div>
-  <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-guru-manual" class="form-input" /></div>
+// ══════════════════════════════════════════════════════════════
+// MODALS — DATA SISWA (TAMBAH + EDIT + ARSIP)
+// ══════════════════════════════════════════════════════════════
+function showTambahSiswa() {
+  showModal(_formSiswaHtml('Tambah Siswa Baru', '', '', '', '', '', '', 'doTambahSiswa'));
+}
+
+function showEditSiswa(nis) {
+  const s = allStudents.find(s => String(s.nis) === String(nis));
+  if (!s) { showToast('Siswa tidak ditemukan', 'error'); return; }
+  showModal(_formSiswaHtml('Edit Data Siswa', s.nis, s.nama, s.kelas, s.jenisKelamin, s.namaOrtu, s.noHpOrtu, 'doEditSiswa', true));
+}
+
+function _formSiswaHtml(title, nis, nama, kelas, jk, namaOrtu, noHp, onSubmit, disableNIS=false) {
+  return `
+  <div class="modal-title">${title}</div>
+  <div class="form-group"><label class="form-label">NIS</label>
+    <input id="md-nis" class="form-input" value="${esc(nis)}" placeholder="Nomor Induk Siswa" ${disableNIS?'readonly style="opacity:0.6"':''}/></div>
+  <div class="form-group"><label class="form-label">Nama Lengkap *</label>
+    <input id="md-nama" class="form-input" value="${esc(nama)}" placeholder="Nama lengkap siswa" /></div>
+  <div class="form-group"><label class="form-label">Kelas</label>
+    <select id="md-kelas" class="form-select">
+      ${APP_CONFIG.KELAS_LIST.map(k=>`<option value="${k}" ${k===kelas?'selected':''}>${k}</option>`).join('')}
+    </select></div>
+  <div class="form-group"><label class="form-label">Jenis Kelamin</label>
+    <select id="md-jk" class="form-select">
+      <option value="Perempuan" ${jk==='Perempuan'?'selected':''}>Perempuan</option>
+      <option value="Laki-laki" ${jk==='Laki-laki'?'selected':''}>Laki-laki</option>
+    </select></div>
+  <div class="form-group"><label class="form-label">Nama Orang Tua</label>
+    <input id="md-namaortu" class="form-input" value="${esc(namaOrtu)}" /></div>
+  <div class="form-group"><label class="form-label">No HP Orang Tua</label>
+    <input id="md-hp" class="form-input" value="${esc(noHp)}" placeholder="cth: 08123456789" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="closeModal();showToast('Fitur dalam pengembangan','error')">Simpan</button>
+    <button class="btn btn-primary" onclick="${onSubmit}('${esc(nis)}')">Simpan</button>
+  </div>`;
+}
+
+async function doTambahSiswa() {
+  const data = {
+    action: 'add_student',
+    nis: document.getElementById('md-nis').value,
+    nama: document.getElementById('md-nama').value,
+    kelas: document.getElementById('md-kelas').value,
+    jenisKelamin: document.getElementById('md-jk').value,
+    namaOrtu: document.getElementById('md-namaortu').value,
+    noHpOrtu: document.getElementById('md-hp').value
+  };
+  if (!data.nis || !data.nama) { showToast('NIS dan Nama wajib diisi', 'error'); return; }
+  try {
+    const res = await apiPost(data);
+    if (res.success) {
+      closeModal(); showToast('✅ Siswa ditambahkan', 'success');
+      const r = await apiGet('get_students'); allStudents = r.data || []; renderDataSiswa();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+async function doEditSiswa(originalNis) {
+  const data = {
+    action: 'edit_student',
+    nis: originalNis,
+    nama: document.getElementById('md-nama').value,
+    kelas: document.getElementById('md-kelas').value,
+    jenisKelamin: document.getElementById('md-jk').value,
+    namaOrtu: document.getElementById('md-namaortu').value,
+    noHpOrtu: document.getElementById('md-hp').value
+  };
+  try {
+    const res = await apiPost(data);
+    if (res.success) {
+      closeModal(); showToast('✅ Data siswa diperbarui', 'success');
+      const r = await apiGet('get_students'); allStudents = r.data || []; renderDataSiswa();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+function showArchiveSiswa(nis, nama, statusSaat) {
+  showModal(`
+  <div class="modal-title">📁 Arsip Status Siswa — ${esc(nama)}</div>
+  <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">NIS: ${esc(nis)} · Status saat ini: <strong>${esc(statusSaat)}</strong></p>
+  <p style="font-size:13px;margin-bottom:16px">Data absensi historis akan tetap tersimpan. Hanya status siswa yang berubah.</p>
+  <div class="form-group">
+    <label class="form-label">Ubah Status Menjadi</label>
+    <select id="md-archive-status" class="form-select">
+      <option value="AKTIF">AKTIF (Aktifkan Kembali)</option>
+      <option value="LULUS">LULUS</option>
+      <option value="PINDAH">PINDAH</option>
+      <option value="DO">DO (Dropout)</option>
+      <option value="NONAKTIF">NONAKTIF</option>
+    </select>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+    <button class="btn btn-warn" onclick="doArchiveSiswa('${esc(nis)}')">Simpan Status</button>
   </div>`);
 }
 
+async function doArchiveSiswa(nis) {
+  const archiveStatus = document.getElementById('md-archive-status').value;
+  try {
+    const res = await apiPost({ action: 'archive_student', nis, archiveStatus });
+    if (res.success) {
+      closeModal(); showToast('✅ Status siswa diubah', 'success');
+      const r = await apiGet('get_students'); allStudents = r.data || []; renderDataSiswa();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+async function hapusSiswa(nis, nama) {
+  if (!confirm(`Hapus permanen siswa "${nama}" (NIS: ${nis})?\nData absensi tidak akan ikut terhapus.\n\nJika siswa lulus/pindah, gunakan tombol 📁 (Arsip) bukan hapus.`)) return;
+  try {
+    const res = await apiPost({ action: 'delete_student', nis });
+    if (res.success) {
+      showToast('✅ Siswa dihapus', 'success');
+      const r = await apiGet('get_students'); allStudents = r.data || []; renderDataSiswa();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODALS — DATA GURU (TAMBAH + EDIT)
+// ══════════════════════════════════════════════════════════════
+function showTambahGuru() {
+  showModal(_formGuruHtml('Tambah Guru/Tendik', '', '', '', '', '', 'Guru', 'doTambahGuru'));
+}
+
+function showEditGuru(nig) {
+  const t = allTeachers.find(t => String(t.nig) === String(nig));
+  if (!t) { showToast('Guru tidak ditemukan', 'error'); return; }
+  showModal(_formGuruHtml('Edit Data Guru', t.nig, t.nama, t.jabatan, t.mapel, t.jenisKelamin, t.tipe, 'doEditGuru', true));
+}
+
+function _formGuruHtml(title, nig, nama, jabatan, mapel, jk, tipe, onSubmit, disableNIG=false) {
+  return `
+  <div class="modal-title">${title}</div>
+  <div class="form-group"><label class="form-label">NIG/NIP *</label>
+    <input id="md-g-nig" class="form-input" value="${esc(nig)}" placeholder="Nomor Induk Guru" ${disableNIG?'readonly style="opacity:0.6"':''}/></div>
+  <div class="form-group"><label class="form-label">Nama Lengkap *</label>
+    <input id="md-g-nama" class="form-input" value="${esc(nama)}" /></div>
+  <div class="form-group"><label class="form-label">Jabatan</label>
+    <input id="md-g-jabatan" class="form-input" value="${esc(jabatan)}" placeholder="cth: Guru Matematika, Kepala Sekolah" /></div>
+  <div class="form-group"><label class="form-label">Mata Pelajaran</label>
+    <input id="md-g-mapel" class="form-input" value="${esc(mapel)}" placeholder="opsional" /></div>
+  <div class="form-group"><label class="form-label">Jenis Kelamin</label>
+    <select id="md-g-jk" class="form-select">
+      <option value="Perempuan" ${jk==='Perempuan'?'selected':''}>Perempuan</option>
+      <option value="Laki-laki" ${jk==='Laki-laki'?'selected':''}>Laki-laki</option>
+    </select></div>
+  <div class="form-group"><label class="form-label">Tipe</label>
+    <select id="md-g-tipe" class="form-select">
+      <option value="Guru" ${tipe==='Guru'?'selected':''}>Guru</option>
+      <option value="TU" ${tipe==='TU'?'selected':''}>Tata Usaha</option>
+      <option value="Tendik" ${tipe==='Tendik'?'selected':''}>Tenaga Kependidikan</option>
+    </select></div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+    <button class="btn btn-primary" onclick="${onSubmit}('${esc(nig)}')">Simpan</button>
+  </div>`;
+}
+
+async function doTambahGuru() {
+  const data = {
+    action: 'add_teacher',
+    nig: document.getElementById('md-g-nig').value,
+    nama: document.getElementById('md-g-nama').value,
+    jabatan: document.getElementById('md-g-jabatan').value,
+    mapel: document.getElementById('md-g-mapel').value,
+    jenisKelamin: document.getElementById('md-g-jk').value,
+    tipe: document.getElementById('md-g-tipe').value
+  };
+  if (!data.nig || !data.nama) { showToast('NIG dan Nama wajib diisi', 'error'); return; }
+  try {
+    const res = await apiPost(data);
+    if (res.success) {
+      closeModal(); showToast('✅ Guru ditambahkan', 'success');
+      const r = await apiGet('get_teachers'); allTeachers = r.data || []; renderDataGuru();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+async function doEditGuru(originalNig) {
+  const data = {
+    action: 'edit_teacher',
+    nig: originalNig,
+    nama: document.getElementById('md-g-nama').value,
+    jabatan: document.getElementById('md-g-jabatan').value,
+    mapel: document.getElementById('md-g-mapel').value,
+    jenisKelamin: document.getElementById('md-g-jk').value,
+    tipe: document.getElementById('md-g-tipe').value
+  };
+  try {
+    const res = await apiPost(data);
+    if (res.success) {
+      closeModal(); showToast('✅ Data guru diperbarui', 'success');
+      const r = await apiGet('get_teachers'); allTeachers = r.data || []; renderDataGuru();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+async function hapusGuru(nig, nama) {
+  if (!confirm(`Hapus guru "${nama}" (NIG: ${nig})?`)) return;
+  try {
+    const res = await apiPost({ action: 'delete_teacher', nig });
+    if (res.success) {
+      showToast('✅ Guru dihapus', 'success');
+      const r = await apiGet('get_teachers'); allTeachers = r.data || []; renderDataGuru();
+    } else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal', 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// IMPORT / EXPORT
+// ══════════════════════════════════════════════════════════════
 function showImportSiswa() {
   showModal(`
   <div class="modal-title">⬆ Import Data Siswa</div>
-  <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Format Excel harus memiliki kolom: <strong>NIS, Nama, Kelas, Jenis Kelamin, Nama Ortu, No HP Ortu</strong></p>
+  <div class="alert-box alert-warn" style="margin-bottom:16px">⚠️ Import akan <strong>mengganti semua data siswa</strong> yang ada!</div>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Kolom Excel yang dikenali: <strong>NIS, Nama, Kelas, Jenis Kelamin, Nama Ortu, No HP Ortu</strong></p>
   <div class="form-group">
     <label class="form-label">Pilih File Excel (.xlsx / .xls)</label>
     <input id="import-file" class="form-input" type="file" accept=".xlsx,.xls" />
   </div>
-  <p style="color:var(--warn);font-size:12px;margin-bottom:12px">⚠️ Import akan mengganti SEMUA data siswa yang ada</p>
+  <div id="import-preview" style="font-size:13px;color:var(--text-muted);margin-top:8px"></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-warn" onclick="doImportSiswa()">Import & Ganti Data</button>
+    <button class="btn btn-warn" onclick="doImportSiswa()">⬆ Import & Ganti Data</button>
   </div>`);
+
+  document.getElementById('import-file').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+    try {
+      const data = await readExcel(file);
+      document.getElementById('import-preview').textContent = `✅ Ditemukan ${data.length} baris data. Klik "Import & Ganti Data" untuk melanjutkan.`;
+    } catch { document.getElementById('import-preview').textContent = '❌ Gagal membaca file.'; }
+  });
 }
 
 async function doImportSiswa() {
   const file = document.getElementById('import-file').files[0];
   if (!file) { showToast('Pilih file Excel dahulu', 'error'); return; }
   try {
-    const data = await readExcel(file);
+    const data     = await readExcel(file);
     if (data.length === 0) { showToast('File kosong atau format salah', 'error'); return; }
-    // Map ke format siswa — coba deteksi kolom
     const students = data.map(row => ({
-      nis: row['NIS'] || row['nis'] || row['Nomor Induk Siswa'] || '',
-      nama: row['Nama'] || row['NAMA'] || row['Nama Lengkap'] || '',
-      kelas: row['Kelas'] || row['KELAS'] || '',
-      jenisKelamin: row['Jenis Kelamin'] || row['JK'] || 'Perempuan',
-      namaOrtu: row['Nama Ortu'] || row['Nama Orang Tua'] || '',
-      noHpOrtu: row['No HP Ortu'] || row['HP Ortu'] || ''
+      nis:         String(row['NIS'] || row['nis'] || row['Nomor Induk Siswa'] || '').trim(),
+      nama:        String(row['Nama'] || row['NAMA'] || row['Nama Lengkap'] || '').trim(),
+      kelas:       String(row['Kelas'] || row['KELAS'] || '').trim(),
+      jenisKelamin: String(row['Jenis Kelamin'] || row['JK'] || 'Perempuan').trim(),
+      namaOrtu:    String(row['Nama Ortu'] || row['Nama Orang Tua'] || '').trim(),
+      noHpOrtu:    String(row['No HP Ortu'] || row['HP Ortu'] || '').trim()
     })).filter(s => s.nis && s.nama);
 
     if (students.length === 0) { showToast('Tidak ada data valid ditemukan', 'error'); return; }
@@ -1478,9 +2005,7 @@ async function doImportSiswa() {
     const res = await apiPost({ action: 'import_students', students });
     if (res.success) {
       closeModal(); showToast('✅ ' + res.message, 'success');
-      const r = await apiGet('get_students');
-      allStudents = r.data || [];
-      renderDataSiswa();
+      const r = await apiGet('get_students'); allStudents = r.data || []; renderDataSiswa();
     } else showToast('❌ ' + res.message, 'error');
   } catch(e) { showToast('❌ Error: ' + e.message, 'error'); }
 }
@@ -1489,49 +2014,44 @@ async function exportAbsenSiswa() {
   const tanggal = document.getElementById('filter-tgl-siswa')?.value || todayStr();
   const kelas   = document.getElementById('filter-kls-siswa')?.value || '';
   const res     = await apiGet('get_attendance', { tanggal, kelas });
-  const data    = (res.siswa||[]).map((a,i)=>({ 'No': i+1, 'NIS': a.nis, 'Nama': a.nama, 'Kelas': 'Kelas '+a.kelas, 'Jam Masuk': a.jamMasuk, 'Status': a.status, 'Keterangan': a.keterangan||'' }));
+  const data    = (res.siswa||[]).map((a,i) => ({ 'No': i+1, 'NIS': a.nis, 'Nama': a.nama, 'Kelas': 'Kelas '+a.kelas, 'Jam Masuk': a.jamMasuk, 'Status': a.status, 'Keterangan': a.keterangan||'' }));
   exportToExcel(data, `Absensi_Siswa_${tanggal}`);
 }
 
 async function exportAbsenGuru() {
   const tanggal = document.getElementById('filter-tgl-guru')?.value || todayStr();
   const res     = await apiGet('get_attendance', { tanggal });
-  const data    = (res.guru||[]).map((a,i)=>({ 'No': i+1, 'NIG': a.nig, 'Nama': a.nama, 'Jam Masuk': a.jamMasuk, 'Status Masuk': a.statusMasuk, 'Jam Pulang': a.jamPulang||'-', 'Status Pulang': a.statusPulang||'-' }));
+  const data    = (res.guru||[]).map((a,i) => ({ 'No': i+1, 'NIG': a.nig, 'Nama': a.nama, 'Jam Masuk': a.jamMasuk, 'Status Masuk': a.statusMasuk, 'Jam Pulang': a.jamPulang||'-', 'Status Pulang': a.statusPulang||'-', 'Keterangan': a.keterangan||'' }));
   exportToExcel(data, `Absensi_Guru_${tanggal}`);
 }
 
 async function exportDataSiswa() {
-  const data = allStudents.map((s,i)=>({ 'No': i+1, 'NIS': s.nis, 'Nama': s.nama, 'Kelas': 'Kelas '+s.kelas, 'JK': s.jenisKelamin, 'Nama Ortu': s.namaOrtu, 'No HP Ortu': s.noHpOrtu, 'Status': s.status }));
+  const data = allStudents.map((s,i) => ({ 'No': i+1, 'NIS': s.nis, 'Nama': s.nama, 'Kelas': s.kelas, 'JK': s.jenisKelamin, 'Nama Ortu': s.namaOrtu, 'No HP Ortu': s.noHpOrtu, 'Status': s.status }));
   exportToExcel(data, 'Data_Siswa_MTS_AlHuda');
 }
 
 async function exportDataGuru() {
-  const data = allTeachers.map((t,i)=>({ 'No': i+1, 'NIG': t.nig, 'Nama': t.nama, 'Jabatan': t.jabatan, 'Mapel': t.mapel, 'JK': t.jenisKelamin, 'Tipe': t.tipe }));
+  const data = allTeachers.map((t,i) => ({ 'No': i+1, 'NIG': t.nig, 'Nama': t.nama, 'Jabatan': t.jabatan, 'Mapel': t.mapel, 'JK': t.jenisKelamin, 'Tipe': t.tipe }));
   exportToExcel(data, 'Data_Guru_MTS_AlHuda');
 }
 
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
 // UTILS
-// ══════════════════════════════════════════════════════════
-function showContent(html) {
-  document.getElementById('content').innerHTML = html;
-}
-
+// ══════════════════════════════════════════════════════════════
+function showContent(html) { document.getElementById('content').innerHTML = html; }
 function showModal(html) {
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('modal').classList.add('show');
 }
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('show');
-}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
 let toastTimer2 = null;
 function showToast(msg, type = '') {
   const t = document.getElementById('dash-toast');
-  t.textContent = msg; t.className = type ? `show ${type}` : 'show';
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
   clearTimeout(toastTimer2);
-  toastTimer2 = setTimeout(() => t.classList.remove('show'), 3500);
+  toastTimer2 = setTimeout(() => t.classList.remove('show'), 3800);
 }
 
 function todayStr() {
@@ -1540,6 +2060,7 @@ function todayStr() {
 }
 
 function formatDateLong(d) {
+  if (!(d instanceof Date) || isNaN(d)) return '';
   return `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
 }
 
@@ -1549,55 +2070,63 @@ function updateHeaderDate() {
 
 function badgeHtml(status, type='') {
   const map = {
-    'HADIR':       'badge-hadir',
-    'TERLAMBAT':   'badge-terlambat',
-    'ALPA':        'badge-alpa',
-    'IZIN':        'badge-izin',
-    'SAKIT':       'badge-sakit',
-    'TEPAT_WAKTU': 'badge-hadir',
-    'PULANG_AWAL': 'badge-terlambat'
+    'HADIR':'badge-hadir','TERLAMBAT':'badge-terlambat','ALPA':'badge-alpa',
+    'IZIN':'badge-izin','SAKIT':'badge-sakit','TEPAT_WAKTU':'badge-hadir','PULANG_AWAL':'badge-terlambat'
   };
-  const label = {
-    'TEPAT_WAKTU': 'Tepat Waktu',
-    'PULANG_AWAL': 'Pulang Awal'
-  };
+  const label = { 'TEPAT_WAKTU':'Tepat Waktu','PULANG_AWAL':'Pulang Awal' };
   const cls = map[status] || 'badge-belum';
-  return `<span class="badge ${cls}">${label[status]||status||'—'}</span>`;
+  return `<span class="badge ${cls}">${esc(label[status]||status||'—')}</span>`;
+}
+
+function statusSiswaBadge(status) {
+  const map = {
+    'AKTIF':'badge-aktif','LULUS':'badge-lulus','PINDAH':'badge-pindah',
+    'DO':'badge-do','NONAKTIF':'badge-nonaktif'
+  };
+  return `<span class="badge ${map[status]||'badge-belum'}">${esc(status||'AKTIF')}</span>`;
 }
 
 function statMiniCard(icon, label, value, color) {
-  return `
-  <div class="stat-card ${color}-card">
+  return `<div class="stat-card ${color}-card">
     <div class="stat-icon">${icon}</div>
-    <div class="stat-body">
-      <div class="stat-num">${value}</div>
-      <div class="stat-label">${label}</div>
-    </div>
+    <div class="stat-body"><div class="stat-num">${value}</div><div class="stat-label">${label}</div></div>
   </div>`;
 }
 
+// ── API HELPERS ──
 async function apiGet(action, params = {}) {
-  const qs = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${API}?${qs}`, {
-    redirect: 'follow'
-  });
+  const qs  = new URLSearchParams({ action, sessionToken: SESSION_TOKEN || '', ...params }).toString();
+  const res = await fetch(`${API}?${qs}`, { redirect: 'follow' });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
-  try { return JSON.parse(text); }
-  catch { throw new Error('Response bukan JSON: ' + text.slice(0,100)); }
+  const json = JSON.parse(text);
+  if (json.code === 'UNAUTHORIZED') {
+    sessionStorage.clear();
+    location.reload();
+    throw new Error('Sesi berakhir');
+  }
+  return json;
 }
 
 async function apiPost(payload) {
-  // Google Apps Script butuh Content-Type: text/plain untuk menghindari CORS preflight
-  const res = await fetch(API, {
-    method:   'POST',
-    redirect: 'follow',
-    headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
-    body:     JSON.stringify(payload)
-  });
+  const body = JSON.stringify({ ...payload, sessionToken: SESSION_TOKEN || '' });
+  const res  = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
   const text = await res.text();
-  try { return JSON.parse(text); }
-  catch { throw new Error('Response bukan JSON: ' + text.slice(0,100)); }
+  const json = JSON.parse(text);
+  if (json.code === 'UNAUTHORIZED') {
+    sessionStorage.clear();
+    location.reload();
+    throw new Error('Sesi berakhir');
+  }
+  return json;
+}
+
+async function apiPostPublic(payload) {
+  // Untuk login/validate_session — tanpa sessionToken
+  const body = JSON.stringify(payload);
+  const res  = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body });
+  const text = await res.text();
+  return JSON.parse(text);
 }
 
 function exportToExcel(data, filename) {
