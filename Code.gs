@@ -87,7 +87,7 @@ function doGet(e) {
     const sessionToken = e.parameter.sessionToken;
 
     // GET publik
-    const PUBLIC_GET = ['validate_device'];
+    const PUBLIC_GET = ['validate_device', 'login', 'validate_session'];
     if (!PUBLIC_GET.includes(action)) {
       const role = _validateSession(sessionToken);
       if (!role) {
@@ -96,6 +96,8 @@ function doGet(e) {
     }
 
     switch (action) {
+      case 'login':             return doLogin({ pin: e.parameter.pin });
+      case 'validate_session':  return doValidateSession({ sessionToken });
       case 'get_attendance':    return getAttendance(e.parameter);
       case 'get_students':      return getStudents();
       case 'get_teachers':      return getTeachers();

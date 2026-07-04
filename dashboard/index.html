@@ -111,9 +111,11 @@ html, body { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; backgro
 .role-tab { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--border); background: none; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
 .role-tab.active { background: var(--primary-lt); border-color: var(--primary); color: var(--primary); }
 .login-input-wrap { position: relative; margin-bottom: 14px; }
-.login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px 13px 44px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; letter-spacing: 0.2em; }
+.login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 44px 13px 44px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; letter-spacing: 0.2em; }
 .login-input:focus { border-color: var(--primary); }
 .login-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; pointer-events: none; }
+.login-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; color: var(--text-muted); transition: color 0.2s; }
+.login-eye:hover { color: var(--primary); }
 .login-btn { width: 100%; background: linear-gradient(135deg, var(--primary), #059669); border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; font-family: inherit; color: #fff; cursor: pointer; transition: all 0.2s; margin-top: 6px; }
 .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.35); }
 .login-err { color: var(--danger); font-size: 12px; text-align: center; margin-top: 10px; min-height: 20px; }
@@ -323,6 +325,7 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
              inputmode="text" autocomplete="current-password"
              maxlength="20" placeholder="Masukkan PIN"
              onkeyup="if(event.key==='Enter') doLogin()" />
+      <button class="login-eye" id="eye-btn" onclick="togglePin()" title="Lihat/sembunyikan PIN" type="button">👁️</button>
     </div>
 
     <button class="login-btn" id="login-btn" onclick="doLogin()">Masuk</button>
@@ -437,7 +440,23 @@ function selectRole(role, el) {
   el.classList.add('active');
 }
 
+function togglePin() {
+  const inp = document.getElementById('pin-input');
+  const btn = document.getElementById('eye-btn');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    inp.style.letterSpacing = 'normal';
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    inp.style.letterSpacing = '0.2em';
+    btn.textContent = '👁️';
+  }
+  inp.focus();
+}
+
 async function doLogin() {
+
   const pin = document.getElementById('pin-input').value;
   const err = document.getElementById('login-err');
   const btn = document.getElementById('login-btn');
@@ -2824,28 +2843,31 @@ async function apiPost(payload) {
 }
 
 async function apiPostPublic(payload) {
-  // Untuk login/validate_session — tanpa sessionToken
-  // Timeout 15 detik agar tidak freeze
+  // Login & validate_session pakai GET (lebih stabil di Apps Script)
+  // GET menghindari masalah CORS redirect pada POST
   const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), 15000);
+  const timeoutId  = setTimeout(() => controller.abort(), 20000);
   try {
-    const body = JSON.stringify(payload);
-    const res  = await fetch(API, {
-      method: 'POST',
+    const qs  = new URLSearchParams(payload).toString();
+    const res = await fetch(`${API}?${qs}`, {
+      method: 'GET',
       redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body,
       signal: controller.signal
     });
     const text = await res.text();
+    // Coba parse JSON — kalau HTML berarti redirect gagal
+    if (text.trim().startsWith('<')) {
+      throw new Error('Server mengembalikan halaman HTML, bukan JSON. Coba refresh halaman.');
+    }
     return JSON.parse(text);
   } catch (e) {
-    if (e.name === 'AbortError') throw new Error('Koneksi timeout (>15 detik). Periksa internet atau coba lagi.');
+    if (e.name === 'AbortError') throw new Error('Koneksi timeout (>20 detik). Periksa internet.');
     throw e;
   } finally {
     clearTimeout(timeoutId);
   }
 }
+
 
 function exportToExcel(data, filename) {
   if (!data.length) { showToast('Tidak ada data untuk diekspor', 'error'); return; }

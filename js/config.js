@@ -10,7 +10,7 @@
 const APP_CONFIG = {
   // ── WAJIB DIISI setelah deploy Google Apps Script ──
   // Dapatkan URL dari: Apps Script → Deploy → Manage Deployments
-  API_URL: 'https://script.google.com/macros/s/AKfycbwbyAmb5ckFlydwJs34DcfbI21gvv9vzdtI5SFFd5n6CMkKeDnvJIPk81EzzERuvnZ98w/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzaZiFyB561JxeAupvemni855n070ZxERlDbGVGvbv0kysvP7pO31JC7W6bVxZbSAXzTQ/exec',
 
 
   // ── Informasi Sekolah ──
