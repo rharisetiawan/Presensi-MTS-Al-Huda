@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Scanner Presensi — MTS Al Huda Putri</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="../assets/js/config.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:     #10b981;
+      --primary-dk:  #059669;
+      --warn:        #f59e0b;
+      --danger:      #ef4444;
+      --info:        #3b82f6;
+      --bg:          #0a1628;
+      --surface:     #111f38;
+      --surface2:    #1a2e4a;
+      --text:        #f1f5f9;
+      --text-muted:  #94a3b8;
+      --border:      rgba(255,255,255,0.08);
+      --glow:        rgba(16,185,129,0.35);
+    }
+
+    html, body {
+      height: 100%; width: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ── SETUP SCREEN ─────────────────────────────── */
+    #setup-screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px; padding: 32px;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .setup-logo {
+      font-size: 48px; margin-bottom: 8px;
+    }
+    .setup-title {
+      font-size: 22px; font-weight: 800;
+      text-align: center; line-height: 1.3;
+    }
+    .setup-sub {
+      font-size: 13px; color: var(--text-muted);
+      text-align: center; max-width: 280px;
+    }
+    .setup-card {
+      width: 100%; max-width: 340px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .setup-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      font-size: 14px; font-family: inherit;
+      color: var(--text); width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .setup-input:focus { border-color: var(--primary); }
+    .setup-input::placeholder { color: var(--text-muted); }
+    .setup-btn {
+      background: var(--primary);
+      color: #fff; font-size: 15px; font-weight: 700;
+      font-family: inherit;
+      border: none; border-radius: 10px;
+      padding: 14px; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .setup-btn:active { transform: scale(0.97); }
+    .setup-btn.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 13px;
+    }
+    .setup-label {
+      font-size: 12px; color: var(--text-muted);
+      font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: -6px;
+    }
+
+    /* ── MAIN SCANNER SCREEN ──────────────────────── */
+    #main-screen {
+      position: fixed; inset: 0;
+      display: none; flex-direction: column;
+      background: var(--bg);
+    }
+
+    /* Header */
+    .scanner-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+    .header-school {
+      display: flex; flex-direction: column;
+    }
+    .header-school-name {
+      font-size: 14px; font-weight: 700; line-height: 1.2;
+    }
+    .header-school-sub {
+      font-size: 11px; color: var(--text-muted);
+    }
+    .header-clock {
+      text-align: right;
+    }
+    .clock-time {
+      font-size: 22px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: 11px; color: var(--text-muted);
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.25);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 3px rgba(16,185,129,0.25); }
+      50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.1); }
+    }
+
+    /* Camera Area */
+    .camera-container {
+      flex: 1; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      background: #000;
+    }
+    #qr-reader {
+      width: 100%; height: 100%;
+    }
+    #qr-reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+    /* Override html5-qrcode default styles */
+    #qr-reader > div { border: none !important; }
+    #qr-reader__scan_region { background: transparent !important; }
+    #qr-reader__scan_region > img { display: none !important; }
+    #qr-reader__dashboard { display: none !important; }
+
+    /* Viewfinder overlay */
+    .viewfinder {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .vf-frame {
+      width: 220px; height: 220px;
+      position: relative;
+    }
+    .vf-corner {
+      position: absolute;
+      width: 30px; height: 30px;
+      border-color: var(--primary);
+      border-style: solid;
+      border-width: 0;
+    }
+    .vf-corner.tl { top: 0; left: 0;  border-top-width: 3px; border-left-width: 3px;  border-radius: 8px 0 0 0; }
+    .vf-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 8px 0 0; }
+    .vf-corner.bl { bottom: 0; left: 0;  border-bottom-width: 3px; border-left-width: 3px;  border-radius: 0 0 0 8px; }
+    .vf-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 8px 0; }
+
+    .scan-line {
+      position: absolute; left: 4px; right: 4px; top: 4px;
+      height: 2px; background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      animation: scanMove 2s ease-in-out infinite;
+      border-radius: 1px;
+    }
+    @keyframes scanMove {
+      0%   { top: 4px; opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { top: calc(100% - 6px); opacity: 0; }
+    }
+
+    .vf-label {
+      position: absolute; bottom: -28px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px; color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+
+    /* Offline queue badge */
+    .offline-badge {
+      position: absolute; top: 10px; left: 10px;
+      background: var(--warn);
+      color: #000; font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 100px;
+      display: none;
+    }
+    .offline-badge.show { display: block; }
+
+    /* Bottom info bar */
+    .scanner-footer {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .footer-count {
+      display: flex; gap: 16px; justify-content: center;
+      align-items: center;
+    }
+    .count-item {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .count-num {
+      font-size: 20px; font-weight: 800;
+      line-height: 1;
+    }
+    .count-label {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .count-divider {
+      width: 1px; height: 30px; background: var(--border);
+    }
+    .count-num.green  { color: var(--primary); }
+    .count-num.yellow { color: var(--warn); }
+    .count-num.muted  { color: var(--text-muted); }
+
+    /* ── RESULT OVERLAY ───────────────────────────── */
+    #result-overlay {
+      position: fixed; inset: 0;
+      z-index: 50;
+      display: flex; align-items: flex-end;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+    #result-overlay.show { opacity: 1; pointer-events: all; }
+
+    .result-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    .result-card {
+      position: relative; z-index: 1;
+      width: 100%;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 40px;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.32,0.72,0,1);
+    }
+    #result-overlay.show .result-card { transform: translateY(0); }
+
+    .result-card.success  { background: #0d2b1f; border-top: 3px solid var(--primary); }
+    .result-card.warning  { background: #2a2007; border-top: 3px solid var(--warn); }
+    .result-card.error    { background: #2a0f0f; border-top: 3px solid var(--danger); }
+    .result-card.duplicate { background: #1a1f2e; border-top: 3px solid var(--info); }
+
+    .result-icon {
+      font-size: 52px; text-align: center;
+      display: block; margin-bottom: 12px;
+    }
+    .result-status {
+      text-align: center; font-size: 12px;
+      font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+    .result-status.success  { color: var(--primary); }
+    .result-status.warning  { color: var(--warn); }
+    .result-status.error    { color: var(--danger); }
+    .result-status.duplicate { color: var(--info); }
+
+    .result-name {
+      text-align: center; font-size: 26px; font-weight: 800;
+      line-height: 1.2; margin-bottom: 4px;
+    }
+    .result-sub {
+      text-align: center; font-size: 14px; color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .result-time-badge {
+      display: flex; justify-content: center;
+    }
+    .time-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      border-radius: 100px;
+      font-size: 18px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .time-badge.hadir     { background: rgba(16,185,129,0.15); color: var(--primary); }
+    .time-badge.terlambat { background: rgba(245,158,11,0.15);  color: var(--warn); }
+    .time-badge.error     { background: rgba(239,68,68,0.15);   color: var(--danger); }
+    .time-badge.info      { background: rgba(59,130,246,0.15);  color: var(--info); }
+
+    .result-msg {
+      text-align: center; margin-top: 16px;
+      font-size: 13px; color: var(--text-muted);
+    }
+
+    /* ── TOAST ────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px; border-radius: 100px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.3s;
+      pointer-events: none; z-index: 200;
+      white-space: nowrap;
+    }
+    #toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+
+    /* Progress bar for auto-dismiss */
+    .result-progress {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: rgba(255,255,255,0.1); border-radius: 0;
+      overflow: hidden;
+    }
+    .result-progress-bar {
+      height: 100%; width: 100%;
+      background: var(--primary);
+      transform-origin: left;
+    }
+    .result-progress-bar.warning { background: var(--warn); }
+  </style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║       SETUP / REGISTER SCREEN    ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<div id="setup-screen">
+  <div class="setup-logo">📱</div>
+  <div class="setup-title">Scanner Presensi<br/>MTS Al Huda Putri</div>
+  <div class="setup-sub">HP ini belum terdaftar sebagai perangkat scanner. Hubungi admin (TU) untuk mendapatkan token registrasi.</div>
+
+  <div class="setup-card">
+    <div class="setup-label">Nama Perangkat</div>
+    <input id="device-name" class="setup-input" type="text" placeholder="cth: HP Scanner Gerbang" />
+    <div class="setup-label">Token Registrasi (dari Admin)</div>
+    <input id="reg-token" class="setup-input" type="text" placeholder="MTS-XXXX-XXXX-XXXX" style="font-family:monospace;letter-spacing:0.1em" />
+    <button class="setup-btn" onclick="registerDevice()">Daftarkan Perangkat</button>
+    <button class="setup-btn secondary" onclick="enterManualToken()">Sudah punya token? Masukkan di sini</button>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║         MAIN SCANNER SCREEN      ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<div id="main-screen">
+
+  <!-- Header -->
+  <div class="scanner-header">
+    <div class="header-school">
+      <div class="header-school-name">MTS Al Huda Putri</div>
+      <div class="header-school-sub">Scanner Presensi</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="status-dot" id="conn-dot" title="Status koneksi"></div>
+      <div class="header-clock">
+        <div class="clock-time" id="clock">--:--</div>
+        <div class="clock-date" id="clock-date">--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera -->
+  <div class="camera-container">
+    <div id="qr-reader"></div>
+
+    <!-- Viewfinder overlay -->
+    <div class="viewfinder">
+      <div class="vf-frame">
+        <div class="vf-corner tl"></div>
+        <div class="vf-corner tr"></div>
+        <div class="vf-corner bl"></div>
+        <div class="vf-corner br"></div>
+        <div class="scan-line"></div>
+        <div class="vf-label">Arahkan QR Card ke sini</div>
+      </div>
+    </div>
+
+    <!-- Offline badge -->
+    <div class="offline-badge" id="offline-badge">
+      ⚠️ Offline — <span id="queue-count">0</span> antrian
+    </div>
+  </div>
+
+  <!-- Footer Stats -->
+  <div class="scanner-footer">
+    <div class="footer-count">
+      <div class="count-item">
+        <div class="count-num green" id="count-hadir">0</div>
+        <div class="count-label">Hadir</div>
+      </div>
+      <div class="count-divider"></div>
+      <div class="count-item">
+        <div class="count-num yellow" id="count-terlambat">0</div>
+        <div class="count-label">Terlambat</div>
+      </div>
+      <div class="count-divider"></div>
+      <div class="count-item">
+        <div class="count-num muted" id="count-total">0</div>
+        <div class="count-label">Total Scan</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║         RESULT OVERLAY           ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<div id="result-overlay">
+  <div class="result-backdrop" onclick="dismissResult()"></div>
+  <div class="result-card" id="result-card">
+    <span class="result-icon" id="result-icon">✅</span>
+    <div class="result-status" id="result-status-text">HADIR</div>
+    <div class="result-name" id="result-name">Nama Siswa</div>
+    <div class="result-sub" id="result-sub">Kelas VII · 06:42</div>
+    <div class="result-time-badge">
+      <div class="time-badge hadir" id="result-badge">
+        <span id="result-badge-icon">✓</span>
+        <span id="result-badge-text">06:42:15</span>
+      </div>
+    </div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-progress">
+      <div class="result-progress-bar" id="result-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let deviceToken     = localStorage.getItem('mts_device_token') || null;
+let isScanning      = false;
+let isCooldown      = false;
+let scanCount       = { hadir: 0, terlambat: 0, total: 0 };
+let offlineQueue    = JSON.parse(localStorage.getItem('mts_offline_queue') || '[]');
+let resultTimer     = null;
+let html5QrCode     = null;
+
+const API = APP_CONFIG.API_URL;
+const COOLDOWN = APP_CONFIG.SCAN_COOLDOWN_MS || 2500;
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  updateClock();
+  setInterval(updateClock, 1000);
+  checkOfflineQueue();
+
+  if (deviceToken) {
+    // Validasi token ke server
+    validateToken().then(valid => {
+      if (valid) {
+        showMainScreen();
+      } else {
+        deviceToken = null;
+        localStorage.removeItem('mts_device_token');
+        showSetupScreen();
+      }
+    }).catch(() => {
+      // Server tidak bisa dihubungi saat init → tetap coba tampilkan scanner
+      // (offline mode)
+      showMainScreen();
+    });
+  } else {
+    showSetupScreen();
+  }
+
+  // Online/offline detection
+  window.addEventListener('online',  onOnline);
+  window.addEventListener('offline', onOffline);
+  if (!navigator.onLine) onOffline();
+});
+
+// ══════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════════════════════
+function showSetupScreen() {
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('main-screen').style.display  = 'none';
+}
+
+function showMainScreen() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display  = 'flex';
+  startScanner();
+}
+
+// ══════════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════════
+function updateClock() {
+  const now   = new Date();
+  const hh    = String(now.getHours()).padStart(2,'0');
+  const mm    = String(now.getMinutes()).padStart(2,'0');
+  const ss    = String(now.getSeconds()).padStart(2,'0');
+  const days  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+  document.getElementById('clock').textContent = `${hh}:${mm}`;
+  document.getElementById('clock-date').textContent =
+    `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+// ══════════════════════════════════════════════════════════
+// DEVICE SETUP
+// ══════════════════════════════════════════════════════════
+async function registerDevice() {
+  const name  = document.getElementById('device-name').value.trim();
+  const token = document.getElementById('reg-token').value.trim();
+
+  if (!name) { showToast('Masukkan nama perangkat'); return; }
+
+  if (token) {
+    // User memberikan token manual (sudah punya token dari admin)
+    const valid = await validateToken(token);
+    if (valid) {
+      deviceToken = token;
+      localStorage.setItem('mts_device_token', token);
+      showToast('✅ Perangkat berhasil didaftarkan!');
+      setTimeout(showMainScreen, 1000);
+    } else {
+      showToast('❌ Token tidak valid atau tidak aktif');
+    }
+    return;
+  }
+
+  // Request token baru dari server (admin harus approve dulu di dashboard)
+  showToast('Mendaftarkan perangkat...');
+  try {
+    const res = await apiPost({ action: 'register_device', name, location: 'Pintu Masuk Sekolah' });
+    if (res.success) {
+      deviceToken = res.token;
+      localStorage.setItem('mts_device_token', res.token);
+      showToast('✅ Token: ' + res.token);
+      setTimeout(showMainScreen, 2000);
+    } else {
+      showToast('❌ ' + res.message);
+    }
+  } catch(e) {
+    showToast('❌ Tidak dapat terhubung ke server');
+  }
+}
+
+function enterManualToken() {
+  const token = prompt('Masukkan token yang diberikan admin:');
+  if (token) {
+    document.getElementById('reg-token').value = token.trim();
+  }
+}
+
+async function validateToken(token = deviceToken) {
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API}?action=validate_device&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    return data.valid === true;
+  } catch { return true; } // offline → asumsikan valid
+}
+
+// ══════════════════════════════════════════════════════════
+// QR SCANNER
+// ══════════════════════════════════════════════════════════
+function startScanner() {
+  html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+
+  const config = {
+    fps: 15,
+    qrbox: { width: 220, height: 220 },
+    aspectRatio: window.innerHeight / window.innerWidth,
+    disableFlip: false
+  };
+
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    config,
+    onQrSuccess,
+    () => {} // onError — abaikan
+  ).catch(err => {
+    showToast('❌ Kamera tidak bisa dibuka: ' + err);
+  });
+}
+
+async function onQrSuccess(qrCode) {
+  if (isCooldown || !qrCode) return;
+
+  // Hanya proses QR dengan format MTS-
+  if (!qrCode.startsWith('MTS-S-') && !qrCode.startsWith('MTS-G-') && !qrCode.startsWith('MTS-TU-')) {
+    showToast('QR tidak dikenal');
+    return;
+  }
+
+  isCooldown = true;
+  vibrate();
+
+  try {
+    const payload = { action: 'scan', qrCode, token: deviceToken };
+
+    if (!navigator.onLine) {
+      // Simpan ke antrian offline
+      offlineQueue.push({ ...payload, queuedAt: new Date().toISOString() });
+      saveOfflineQueue();
+      showResult('duplicate', '📵', 'Offline', 'Data disimpan, akan sync saat online', qrCode, '');
+      return;
+    }
+
+    const res = await apiPost(payload);
+
+    if (res.success) {
+      const isSiswa    = res.type === 'siswa';
+      const isGurMasuk = res.type === 'guru_masuk';
+      const isGurPulang = res.type === 'guru_pulang';
+      const isHadir    = res.status === 'HADIR' || res.status === 'TEPAT_WAKTU';
+
+      scanCount.total++;
+      if (isHadir)            scanCount.hadir++;
+      else if (!isGurPulang)  scanCount.terlambat++;
+      updateCountDisplay();
+
+      if (isSiswa) {
+        const s = res.siswa;
+        const statusText = res.status === 'HADIR' ? 'HADIR' : 'TERLAMBAT';
+        const icon       = isHadir ? '✅' : '⚠️';
+        const cardClass  = isHadir ? 'success' : 'warning';
+        showResult(cardClass, icon, s.nama, `Kelas ${s.kelas} · ${res.jam}`, statusText, res.jam);
+
+      } else if (isGurMasuk) {
+        const g = res.guru;
+        const isH = res.status === 'HADIR';
+        showResult(isH ? 'success' : 'warning', isH ? '👨‍🏫' : '⚠️', g.nama,
+          `${g.jabatan || 'Guru'} · Masuk: ${res.jam}`,
+          isH ? 'GURU HADIR' : 'GURU TERLAMBAT', res.jam);
+
+      } else if (isGurPulang) {
+        const g = res.guru;
+        showResult('success', '🏠', g.nama,
+          `${g.jabatan || 'Guru'} · Pulang: ${res.jam}`,
+          'PULANG', res.jam, 'Tercatat pulang');
+      }
+
+    } else if (res.code === 'DUPLICATE') {
+      const name = res.siswa?.nama || res.guru?.nama || 'Pengguna';
+      showResult('duplicate', 'ℹ️', name, 'Sudah tercatat hari ini', 'SUDAH ABSEN', '', res.message);
+
+    } else {
+      showResult('error', '❌', 'Gagal', res.message || 'Terjadi kesalahan', 'ERROR', '');
+    }
+
+  } catch(err) {
+    // Network error → offline queue
+    offlineQueue.push({ action: 'scan', qrCode, token: deviceToken, queuedAt: new Date().toISOString() });
+    saveOfflineQueue();
+    showResult('duplicate', '📵', 'Offline', 'Data disimpan sementara', '', '');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// RESULT OVERLAY
+// ══════════════════════════════════════════════════════════
+function showResult(type, icon, name, sub, statusLabel, time, msg = '') {
+  clearTimeout(resultTimer);
+
+  const overlay    = document.getElementById('result-overlay');
+  const card       = document.getElementById('result-card');
+  const iconEl     = document.getElementById('result-icon');
+  const statusEl   = document.getElementById('result-status-text');
+  const nameEl     = document.getElementById('result-name');
+  const subEl      = document.getElementById('result-sub');
+  const badgeEl    = document.getElementById('result-badge');
+  const badgeIcon  = document.getElementById('result-badge-icon');
+  const badgeText  = document.getElementById('result-badge-text');
+  const msgEl      = document.getElementById('result-msg');
+  const progressBar = document.getElementById('result-progress-bar');
+
+  // Reset classes
+  card.className = 'result-card ' + type;
+  statusEl.className = 'result-status ' + type;
+  badgeEl.className = 'time-badge ' + (type === 'success' ? 'hadir' : type === 'warning' ? 'terlambat' : 'info');
+
+  iconEl.textContent  = icon;
+  statusEl.textContent = statusLabel;
+  nameEl.textContent  = name;
+  subEl.textContent   = sub;
+  badgeIcon.textContent = time ? '🕐' : '';
+  badgeText.textContent = time || (type === 'duplicate' ? 'Duplikat' : type === 'error' ? 'Error' : '');
+  msgEl.textContent   = msg;
+
+  // Progress bar animation for auto-dismiss
+  progressBar.style.transition = 'none';
+  progressBar.style.transform  = 'scaleX(1)';
+  progressBar.className = 'result-progress-bar' + (type === 'warning' ? ' warning' : '');
+
+  overlay.classList.add('show');
+
+  // Suara
+  if (APP_CONFIG.SOUND_ENABLED) {
+    playBeep(type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'error');
+  }
+
+  // Auto dismiss setelah COOLDOWN
+  setTimeout(() => {
+    progressBar.style.transition = `transform ${COOLDOWN}ms linear`;
+    progressBar.style.transform  = 'scaleX(0)';
+  }, 50);
+
+  resultTimer = setTimeout(() => {
+    dismissResult();
+  }, COOLDOWN + 300);
+}
+
+function dismissResult() {
+  const overlay = document.getElementById('result-overlay');
+  overlay.classList.remove('show');
+  clearTimeout(resultTimer);
+  setTimeout(() => { isCooldown = false; }, 300);
+}
+
+// ══════════════════════════════════════════════════════════
+// AUDIO FEEDBACK
+// ══════════════════════════════════════════════════════════
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playBeep(type = 'success') {
+  try {
+    const osc   = audioCtx.createOscillator();
+    const gain  = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'success') {
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    } else if (type === 'warning') {
+      osc.frequency.value = 600;
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+    } else {
+      osc.frequency.value = 300;
+      osc.type = 'sawtooth';
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    }
+  } catch(e) {}
+}
+
+function vibrate() {
+  if (navigator.vibrate) navigator.vibrate([30, 10, 30]);
+}
+
+// ══════════════════════════════════════════════════════════
+// COUNTER
+// ══════════════════════════════════════════════════════════
+function updateCountDisplay() {
+  document.getElementById('count-hadir').textContent     = scanCount.hadir;
+  document.getElementById('count-terlambat').textContent = scanCount.terlambat;
+  document.getElementById('count-total').textContent     = scanCount.total;
+}
+
+// ══════════════════════════════════════════════════════════
+// OFFLINE QUEUE
+// ══════════════════════════════════════════════════════════
+function saveOfflineQueue() {
+  localStorage.setItem('mts_offline_queue', JSON.stringify(offlineQueue));
+  checkOfflineQueue();
+}
+
+function checkOfflineQueue() {
+  const badge = document.getElementById('offline-badge');
+  const qc    = document.getElementById('queue-count');
+  if (badge) {
+    if (offlineQueue.length > 0) {
+      badge.classList.add('show');
+      qc.textContent = offlineQueue.length;
+    } else {
+      badge.classList.remove('show');
+    }
+  }
+}
+
+async function syncOfflineQueue() {
+  if (offlineQueue.length === 0) return;
+  showToast('Menyinkronkan ' + offlineQueue.length + ' data offline...');
+
+  const toSync = [...offlineQueue];
+  offlineQueue = [];
+  saveOfflineQueue();
+
+  let success = 0;
+  for (const item of toSync) {
+    try {
+      const res = await apiPost(item);
+      if (res.success || res.code === 'DUPLICATE') success++;
+      else offlineQueue.push(item); // kembalikan jika gagal
+    } catch {
+      offlineQueue.push(item);
+    }
+  }
+
+  saveOfflineQueue();
+  if (success > 0) showToast('✅ ' + success + ' data berhasil disinkronkan');
+}
+
+function onOnline() {
+  document.getElementById('conn-dot').style.background = 'var(--primary)';
+  syncOfflineQueue();
+}
+
+function onOffline() {
+  document.getElementById('conn-dot').style.background = 'var(--warn)';
+  checkOfflineQueue();
+}
+
+// ══════════════════════════════════════════════════════════
+// API HELPER
+// ══════════════════════════════════════════════════════════
+async function apiPost(payload) {
+  const res = await fetch(API, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
