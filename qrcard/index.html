@@ -241,8 +241,10 @@ let currentData = [];
 
 async function fetchData(tipe) {
   const action = tipe === 'siswa' ? 'get_students' : 'get_teachers';
-  const res  = await fetch(`${API}?action=${action}`);
-  return (await res.json()).data || [];
+  const res  = await fetch(`${API}?action=${action}`, { redirect: 'follow' });
+  const text = await res.text();
+  try { return (JSON.parse(text)).data || []; }
+  catch { throw new Error('Gagal ambil data'); }
 }
 
 function onTipeChange() {

@@ -1578,19 +1578,26 @@ function statMiniCard(icon, label, value, color) {
 
 async function apiGet(action, params = {}) {
   const qs = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${API}?${qs}`);
+  const res = await fetch(`${API}?${qs}`, {
+    redirect: 'follow'
+  });
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch { throw new Error('Response bukan JSON: ' + text.slice(0,100)); }
 }
 
 async function apiPost(payload) {
+  // Google Apps Script butuh Content-Type: text/plain untuk menghindari CORS preflight
   const res = await fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    method:   'POST',
+    redirect: 'follow',
+    headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+    body:     JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch { throw new Error('Response bukan JSON: ' + text.slice(0,100)); }
 }
 
 function exportToExcel(data, filename) {
