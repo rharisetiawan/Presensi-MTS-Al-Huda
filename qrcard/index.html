@@ -6,7 +6,21 @@
   <title>Generator QR Card — MTS Al Huda Putri</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- QRCode library — multi-CDN dengan fallback otomatis -->
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js" onerror="loadQRFallback()"></script>
+  <script>
+    function loadQRFallback() {
+      // CDN pertama gagal → coba jsDelivr
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+      s.onerror = function() {
+        // Kedua-duanya gagal → tandai pakai image API
+        window._qrLibFailed = true;
+        console.warn('QR library CDN tidak tersedia. Menggunakan QR image API sebagai fallback.');
+      };
+      document.head.appendChild(s);
+    }
+  </script>
   <script src="../assets/js/config.js"></script>
 
 <style>
@@ -339,24 +353,54 @@ async function generateCards() {
     <div class="cards-label">${data.length} kartu siap dicetak — klik kartu untuk preview QR</div>
     <div class="cards-grid">${cardsHtml}</div>`;
 
-    // Generate QR codes
+    // Generate QR codes — pakai library jika tersedia, fallback ke image API
     for (let i = 0; i < data.length; i++) {
-      const item = data[i];
+      const item    = data[i];
       const isSiswa = tipe === 'siswa';
       const qrValue = isSiswa ? `MTS-S-${item.nis}` : `MTS-G-${item.nig}`;
       const canvas  = document.getElementById(`qr-${i}`);
-      if (canvas) {
-        await QRCode.toCanvas(canvas, qrValue, {
-          width: 52, margin: 1,
-          color: { dark: '#FFFFFF', light: '#00000000' }
-        });
-      }
+      if (canvas) await generateQR(canvas, qrValue);
     }
 
     showToast('✅ ' + data.length + ' kartu berhasil dibuat');
   } catch(e) {
     document.getElementById('output').innerHTML = '<div class="loader">Error: ' + e.message + '. Periksa koneksi dan URL API.</div>';
   }
+}
+
+// ── QR Generator — pakai library atau fallback ke image API ──
+async function generateQR(canvas, qrValue) {
+  // Coba pakai library QRCode.toCanvas (butuh CDN berhasil load)
+  if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function' && !window._qrLibFailed) {
+    try {
+      await QRCode.toCanvas(canvas, qrValue, {
+        width: 52, margin: 1,
+        color: { dark: '#FFFFFF', light: '#00000000' }
+      });
+      return;
+    } catch(e) {
+      console.warn('QRCode.toCanvas gagal, beralih ke image API:', e);
+    }
+  }
+
+  // Fallback: gunakan QR image API (tidak butuh library, butuh internet)
+  const img = document.createElement('img');
+  img.src    = 'https://api.qrserver.com/v1/create-qr-code/?size=52x52'
+             + '&data=' + encodeURIComponent(qrValue)
+             + '&bgcolor=000000&color=ffffff&format=png&qzone=1';
+  img.width  = 52;
+  img.height = 52;
+  img.alt    = qrValue;
+  img.style.cssText = 'border-radius:4px;display:block;filter:invert(1)';
+  img.onerror = function() {
+    // Semua gagal → tampilkan teks QR value sebagai fallback terakhir
+    const span = document.createElement('div');
+    span.style.cssText = 'width:52px;height:52px;font-size:6px;color:#fff;word-break:break-all;padding:2px;line-height:1.2;overflow:hidden';
+    span.textContent = qrValue;
+    canvas.parentNode.replaceChild(span, canvas);
+  };
+  // Ganti canvas dengan img
+  canvas.parentNode.replaceChild(img, canvas);
 }
 
 let toastTimer;
