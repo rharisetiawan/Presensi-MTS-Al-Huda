@@ -204,7 +204,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
         <label class="form-label">Filter Kelas</label>
         <select id="ctrl-kelas" class="form-select">
           <option value="">Semua Kelas</option>
-          ${(APP_CONFIG.KELAS_LIST||['VII','VIII','IX']).map(k=>`<option value="${k}">Kelas ${k}</option>`).join('')}
+          <!-- diisi oleh JS -->
         </select>
       </div>
       <div class="form-group">
@@ -239,12 +239,37 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
 const API = APP_CONFIG.API_URL;
 let currentData = [];
 
+// ── Init: isi dropdown dan tahun ajaran dari config ──
+(function initQRCard() {
+  // Isi tahun ajaran
+  const taInput = document.getElementById('ctrl-ta');
+  if (taInput) taInput.value = APP_CONFIG.TAHUN_AJARAN || '2026/2027';
+
+  // Isi dropdown kelas
+  const kelasSel = document.getElementById('ctrl-kelas');
+  const kelasList = APP_CONFIG.KELAS_LIST || ['VII', 'VIII', 'IX'];
+  kelasList.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = 'Kelas ' + k;
+    kelasSel.appendChild(opt);
+  });
+})();
+
 async function fetchData(tipe) {
   const action = tipe === 'siswa' ? 'get_students' : 'get_teachers';
-  const res  = await fetch(`${API}?action=${action}`, { redirect: 'follow' });
+  // Ambil session token dari sessionStorage (login dashboard)
+  const sessionToken = sessionStorage.getItem('mts_session_token') || '';
+  const res  = await fetch(`${API}?action=${action}&sessionToken=${sessionToken}`, { redirect: 'follow' });
   const text = await res.text();
-  try { return (JSON.parse(text)).data || []; }
-  catch { throw new Error('Gagal ambil data'); }
+  try {
+    const json = JSON.parse(text);
+    if (!json.success && json.code === 'UNAUTHORIZED') {
+      throw new Error('Belum login. Silakan login ke Dashboard dulu, lalu buka Generator QR Card dari Dashboard.');
+    }
+    return json.data || [];
+  }
+  catch(e) { throw new Error(e.message || 'Gagal ambil data'); }
 }
 
 function onTipeChange() {
