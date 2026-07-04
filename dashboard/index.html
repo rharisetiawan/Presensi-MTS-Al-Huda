@@ -114,7 +114,7 @@ html, body { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; backgro
 .login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 44px 13px 44px; font-size: 15px; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; letter-spacing: 0.2em; }
 .login-input:focus { border-color: var(--primary); }
 .login-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; pointer-events: none; }
-.login-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; color: var(--text-muted); transition: color 0.2s; }
+.login-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; cursor: pointer; background: none; border: none; padding: 5px; line-height: 1; color: var(--text-muted); transition: color 0.2s; z-index: 10; }
 .login-eye:hover { color: var(--primary); }
 .login-btn { width: 100%; background: linear-gradient(135deg, var(--primary), #059669); border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; font-family: inherit; color: #fff; cursor: pointer; transition: all 0.2s; margin-top: 6px; }
 .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.35); }
@@ -407,14 +407,20 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
 // ══════════════════════════════════════════════════════════════
 // GLOBALS
 // ══════════════════════════════════════════════════════════════
-const API = APP_CONFIG.API_URL;
+const API = typeof APP_CONFIG !== 'undefined' ? APP_CONFIG.API_URL : '';
 let currentPage   = 'home';
 let allStudents   = [];
 let allTeachers   = [];
 let todayAbsence  = { siswa: [], guru: [] };
 let chartInstance = null;
-let SESSION_TOKEN = sessionStorage.getItem('mts_session_token') || null;
-let USER_ROLE     = sessionStorage.getItem('mts_user_role')     || null;
+let SESSION_TOKEN = null;
+let USER_ROLE     = null;
+try {
+  SESSION_TOKEN = sessionStorage.getItem('mts_session_token') || null;
+  USER_ROLE     = sessionStorage.getItem('mts_user_role')     || null;
+} catch (e) {
+  console.warn('sessionStorage tidak tersedia:', e);
+}
 let selectedRole  = 'TU';
 
 const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -462,6 +468,7 @@ async function doLogin() {
   const btn = document.getElementById('login-btn');
 
   if (!pin) { err.textContent = 'Masukkan PIN terlebih dahulu.'; return; }
+  if (!API) { err.textContent = 'Konfigurasi API tidak ditemukan. Periksa file config.js'; return; }
 
   btn.textContent = '⏳ Memverifikasi...';
   btn.disabled = true;
