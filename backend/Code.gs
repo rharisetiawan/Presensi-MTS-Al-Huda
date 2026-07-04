@@ -937,7 +937,7 @@ function addStudent(data) {
       return jsonResponse({ success: false, message: 'NIS ' + data.nis + ' sudah ada.' });
     }
   }
-  sheet.appendRow([data.nis, data.nama, data.kelas || '', data.jenisKelamin || '', data.namaOrtu || '', data.noHpOrtu || '', 'AKTIF']);
+  sheet.getRange(sheet.getLastRow() + 1, 1, 1, 7).setNumberFormat("@").setValues([[data.nis, data.nama, data.kelas || '', data.jenisKelamin || '', data.namaOrtu || '', data.noHpOrtu || '', 'AKTIF']]);
   _addAuditLog('ADD_SISWA', String(data.nis), '', data.nama, data._role, data._role);
   return jsonResponse({ success: true, message: 'Siswa berhasil ditambahkan.' });
 }
@@ -948,7 +948,7 @@ function editStudent(data) {
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(data.nis)) {
       const oldNama = rows[i][1];
-      sheet.getRange(i + 1, 1, 1, 7).setValues([[
+      sheet.getRange(i + 1, 1, 1, 7).setNumberFormat("@").setValues([[
         data.nis,
         data.nama         || rows[i][1],
         data.kelas        || rows[i][2],
@@ -1004,7 +1004,7 @@ function addTeacher(data) {
       return jsonResponse({ success: false, message: 'NIG ' + data.nig + ' sudah ada.' });
     }
   }
-  sheet.appendRow([data.nig, data.nama, data.jabatan || '', data.mapel || '', data.jenisKelamin || '', data.tipe || 'Guru']);
+  sheet.getRange(sheet.getLastRow() + 1, 1, 1, 6).setNumberFormat("@").setValues([[data.nig, data.nama, data.jabatan || '', data.mapel || '', data.jenisKelamin || '', data.tipe || 'Guru']]);
   _addAuditLog('ADD_GURU', String(data.nig), '', data.nama, data._role, data._role);
   return jsonResponse({ success: true, message: 'Guru/Tendik berhasil ditambahkan.' });
 }
@@ -1015,7 +1015,7 @@ function editTeacher(data) {
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(data.nig)) {
       const oldNama = rows[i][1];
-      sheet.getRange(i + 1, 1, 1, 6).setValues([[
+      sheet.getRange(i + 1, 1, 1, 6).setNumberFormat("@").setValues([[
         data.nig,
         data.nama         || rows[i][1],
         data.jabatan      || rows[i][2],
@@ -1055,7 +1055,7 @@ function importStudents(data) {
     const rows = students.map(s => [
       s.nis, s.nama, s.kelas, s.jenisKelamin || '', s.namaOrtu || '', s.noHpOrtu || '', 'AKTIF'
     ]);
-    sheet.getRange(2, 1, rows.length, 7).setValues(rows);
+    sheet.getRange(2, 1, rows.length, 7).setNumberFormat("@").setValues(rows);
   }
 
   _addAuditLog('IMPORT_SISWA', 'ALL', existingCount + ' records', students.length + ' records', data._role, data._role);
@@ -1074,7 +1074,7 @@ function importTeachers(data) {
     const rows = teachers.map(t => [
       t.nig, t.nama, t.jabatan || '', t.mapel || '', t.jenisKelamin || '', t.tipe || 'Guru'
     ]);
-    sheet.getRange(2, 1, rows.length, 6).setValues(rows);
+    sheet.getRange(2, 1, rows.length, 6).setNumberFormat("@").setValues(rows);
   }
 
   _addAuditLog('IMPORT_GURU', 'ALL', existingCount + ' records', teachers.length + ' records', data._role, data._role);

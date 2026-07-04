@@ -11,6 +11,13 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="../assets/js/config.js"></script>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/x-icon" href="../assets/icons/favicon.ico" />
+  <link rel="apple-touch-icon" href="../assets/icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#10b981" />
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -26,6 +33,71 @@
   --sidebar-w:  240px; --header-h: 60px;
   --radius: 12px; --radius-lg: 18px;
 }
+/* ── LIGHT MODE ─────────────────────────────────────────── */
+body.light-mode {
+  --bg:      #f0f4f8; --bg2: #e8edf3;
+  --surface: #ffffff; --surface2: #f1f5f9; --surface3: #e2e8f0;
+  --text:    #1e293b; --text-2: #334155; --text-muted: #64748b;
+  --border:  rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.15);
+}
+body.light-mode .app-header { background: #ffffff; border-bottom: 1px solid rgba(0,0,0,0.1); }
+body.light-mode .sidebar { background: #ffffff; border-right: 1px solid rgba(0,0,0,0.1); }
+body.light-mode #login-screen { background: var(--bg); }
+body.light-mode .login-box { background: #ffffff; border: 1px solid rgba(0,0,0,0.1); }
+
+/* ── SPLASH SCREEN ──────────────────────────────────────── */
+#splash-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+#splash-screen.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+.splash-logo { width: 100px; height: 100px; object-fit: contain;
+  animation: splashPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.splash-title { font-size: 18px; font-weight: 800; text-align: center; color: var(--text); line-height: 1.3;
+  animation: splashFade 0.6s 0.2s both; }
+.splash-tagline { font-size: 12px; color: var(--text-muted); animation: splashFade 0.6s 0.3s both; }
+.splash-bar { width: 160px; height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden;
+  animation: splashFade 0.6s 0.4s both; }
+.splash-bar-fill { height: 100%; background: var(--primary); border-radius: 2px;
+  animation: splashLoad 2s 0.4s ease forwards; }
+@keyframes splashPop  { from { transform: scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
+@keyframes splashFade { from { opacity: 0; transform: translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes splashLoad { from { width:0%; } to { width:100%; } }
+
+/* ── DARK/LIGHT TOGGLE BUTTON ───────────────────────────── */
+.theme-toggle-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 100px; padding: 6px 10px;
+  font-size: 15px; cursor: pointer; line-height: 1;
+  transition: all 0.2s; color: var(--text);
+}
+.theme-toggle-btn:hover { background: var(--surface3); }
+
+/* ── RESPONSIVE MOBILE ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .page-header { padding: 16px; }
+  .page-title { font-size: 18px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .action-bar { flex-wrap: wrap; gap: 8px; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 500px; }
+  .role-grid { grid-template-columns: 1fr !important; }
+  .controls-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── APP FOOTER ─────────────────────────────────────────── */
+.dashboard-footer {
+  text-align: center; padding: 10px;
+  font-size: 11px; color: var(--text-muted);
+  background: var(--surface); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dashboard-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.dashboard-footer a:hover { text-decoration: underline; }
 html, body { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
 
 /* ── LOGIN ── */
@@ -192,7 +264,7 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
 .wali-   { color: var(--text-muted); font-size: 10px; }
 .audit-action { font-family: monospace; font-size: 11px; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
 
-/* ── RESPONSIVE ── */
+/* ── RESPONSIVE ──────────────────────────────────────────── */
 @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .two-col { grid-template-columns: 1fr; } }
 @media (max-width: 768px) {
   .sidebar { position: fixed; top: var(--header-h); left: 0; bottom: 0; z-index: 100; transform: translateX(-100%); }
@@ -201,18 +273,45 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .content { padding: 16px; }
   .header-date { display: none; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .action-bar { flex-wrap: wrap; }
+  .btn { padding: 8px 12px; font-size: 13px; }
+  .table-wrap, .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 480px; }
+  .modal-inner { margin: 8px; border-radius: 14px; max-height: 92vh; }
 }
-@media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr; }
+  .header-logo-text { font-size: 13px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .page-title { font-size: 18px; }
+  .page-sub { font-size: 12px; }
+  .content { padding: 12px; }
+  .role-grid { grid-template-columns: 1fr !important; }
+  .controls-grid { grid-template-columns: 1fr !important; }
+  .panduan-tabs { gap: 4px; }
+  .panduan-tab { padding: 6px 10px; font-size: 12px; }
+  .login-box { padding: 24px 20px; margin: 16px; }
+  .login-role-tabs { flex-wrap: wrap; }
+  .stat-card { padding: 14px; }
+  .stat-val { font-size: 28px; }
+}
 </style>
 </head>
 <body>
 
 <!-- ══ LOGIN ═══════════════════════════════════════════════════ -->
+<div id="splash-screen">
+  <img class="splash-logo" src="../assets/icons/logo-mts.png" alt="Logo MTS Al Huda" />
+  <div class="splash-title">Presensi MTS Al Huda Putri<br/>Dashboard Admin</div>
+  <div class="splash-tagline">Berakhlak · Berprestasi · Berkarakter</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">🏫</div>
+    <img src="../assets/icons/logo-mts.png" alt="Logo MTS" style="width:70px;height:70px;object-fit:contain;margin-bottom:8px" />
     <div class="login-title">Dashboard Admin</div>
-    <div class="login-sub">MTS Al Huda Putri Malang — Sistem Presensi v2.0</div>
+    <div class="login-sub">MTS Al Huda Putri Malang — Sistem Presensi v2.1</div>
     <div class="login-role-tabs">
       <button class="role-tab active" onclick="selectRole('TU',this)">🏢 TU</button>
       <button class="role-tab" onclick="selectRole('KEPSEK',this)">👔 Kepala Sekolah</button>
@@ -240,6 +339,7 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
     <div class="header-right">
       <div class="header-date" id="header-date"></div>
       <span class="header-role-badge" id="role-badge"></span>
+      <button class="theme-toggle-btn" id="dash-theme-btn" onclick="toggleDashTheme()" title="Ganti Tema">🌙</button>
       <div class="header-user-chip" onclick="logout()">👤 Logout</div>
     </div>
   </div>
@@ -248,6 +348,13 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
+      <div style="padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);margin-bottom:4px">
+        <img src="../assets/icons/logo-mts.png" alt="Logo" style="width:36px;height:36px;object-fit:contain;flex-shrink:0" />
+        <div>
+          <div style="font-size:12px;font-weight:800;color:var(--text);line-height:1.2">MTS Al Huda Putri</div>
+          <div style="font-size:10px;color:var(--text-muted)">Sistem Presensi v2.1</div>
+        </div>
+      </div>
       <div class="sidebar-section-label">Menu Utama</div>
       <div class="nav-item active" onclick="navigate('home')" id="nav-home"><span class="nav-icon">🏠</span> Beranda</div>
       <div class="nav-item" onclick="navigate('absen-siswa')" id="nav-absen-siswa"><span class="nav-icon">👩‍🎓</span> Absensi Siswa</div>
@@ -267,10 +374,12 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
       <div class="nav-item hidden" onclick="navigate('audit-log')" id="nav-audit-log"><span class="nav-icon">📜</span> Audit Log</div>
       <div class="nav-item hidden" onclick="navigate('perangkat')" id="nav-perangkat"><span class="nav-icon">📱</span> Perangkat Scanner</div>
       <div class="nav-item hidden" onclick="navigate('pengaturan')" id="nav-pengaturan"><span class="nav-icon">⚙️</span> Pengaturan</div>
+      <div class="nav-item hidden" onclick="navigate('panduan-admin')" id="nav-panduan-admin"><span class="nav-icon">📖</span> Panduan Admin</div>
 
       <div class="sidebar-bottom">
         <div class="nav-item" onclick="window.open('../scanner/','_blank')"><span class="nav-icon">📷</span> Buka Scanner</div>
         <div class="nav-item" onclick="window.open('../qrcard/','_blank')"><span class="nav-icon">🪪</span> Generator QR Card</div>
+        <div style="padding:10px 8px 0;font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5">Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;font-weight:600">weverx.com</a></div>
       </div>
     </div>
 
@@ -441,6 +550,7 @@ function applyRoleNavigation() {
     document.getElementById('nav-audit-log').classList.remove('hidden');
     document.getElementById('nav-perangkat').classList.remove('hidden');
     document.getElementById('nav-pengaturan').classList.remove('hidden');
+    document.getElementById('nav-panduan-admin').classList.remove('hidden');
   } else if (USER_ROLE === 'KEPSEK') {
     document.getElementById('nav-perangkat').classList.remove('hidden');
   }
@@ -454,6 +564,7 @@ function navigate(page) {
   const KEPSEK_ONLY_READ = ['data-siswa','data-guru','hari-libur','perangkat','pengaturan'];
   const TU_ONLY = ['audit-log'];
   const WALI_ALLOWED = ['home','absen-siswa','absen-guru','laporan-siswa','laporan-guru','wali-kelas'];
+  const TU_ONLY_PAGES = ['audit-log','panduan-admin'];
 
   if (USER_ROLE === 'WALI' && !WALI_ALLOWED.includes(page)) {
     showToast('Akses tidak diizinkan untuk role Wali Kelas', 'error');
@@ -466,19 +577,19 @@ function navigate(page) {
   if (activeNav) activeNav.classList.add('active');
   document.getElementById('sidebar').classList.remove('open');
 
-  switch (page) {
-    case 'home':          renderHome();          break;
-    case 'absen-siswa':   renderAbsenSiswa();    break;
-    case 'absen-guru':    renderAbsenGuru();     break;
-    case 'laporan-siswa': renderLaporanSiswa();  break;
-    case 'laporan-guru':  renderLaporanGuru();   break;
-    case 'wali-kelas':    renderWaliKelas();     break;
-    case 'data-siswa':    renderDataSiswa();     break;
-    case 'data-guru':     renderDataGuru();      break;
-    case 'hari-libur':    renderHariLibur();     break;
-    case 'audit-log':     renderAuditLog();      break;
-    case 'perangkat':     renderPerangkat();     break;
-    case 'pengaturan':    renderPengaturan();    break;
+    case 'home':           renderHome();          break;
+    case 'absen-siswa':    renderAbsenSiswa();    break;
+    case 'absen-guru':     renderAbsenGuru();     break;
+    case 'laporan-siswa':  renderLaporanSiswa();  break;
+    case 'laporan-guru':   renderLaporanGuru();   break;
+    case 'wali-kelas':     renderWaliKelas();     break;
+    case 'data-siswa':     renderDataSiswa();     break;
+    case 'data-guru':      renderDataGuru();      break;
+    case 'hari-libur':     renderHariLibur();     break;
+    case 'audit-log':      renderAuditLog();      break;
+    case 'perangkat':      renderPerangkat();     break;
+    case 'pengaturan':     renderPengaturan();    break;
+    case 'panduan-admin':  renderPanduan();       break;
   }
 }
 
@@ -1505,6 +1616,588 @@ async function doSavePIN(pinKey, inputId) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// PANDUAN ADMIN (KHUSUS TU)
+// ══════════════════════════════════════════════════════════════
+function renderPanduan() {
+  if (USER_ROLE !== 'TU') { showToast('Akses ditolak', 'error'); return; }
+
+  const sectionStyle = `background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;overflow:hidden`;
+  const hStyle       = `padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px`;
+  const bStyle       = `padding:20px`;
+  const stepStyle    = `display:flex;gap:14px;margin-bottom:18px;align-items:flex-start`;
+  const numStyle     = `background:var(--primary);color:#fff;font-weight:800;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px`;
+  const noteStyle    = `background:var(--info-lt);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--info);margin:12px 0;display:flex;gap:10px`;
+  const warnStyle    = `background:var(--warn-lt);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--warn);margin:12px 0;display:flex;gap:10px`;
+  const tipStyle     = `background:var(--primary-lt);border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--primary);margin:12px 0;display:flex;gap:10px`;
+  const codeStyle    = `background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:12px;color:#34d399;margin:8px 0;white-space:pre-wrap;overflow-x:auto`;
+  const h3Style      = `font-size:14px;font-weight:700;margin-bottom:10px;margin-top:16px;color:var(--text)`;
+  const pStyle       = `font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:8px`;
+  const liStyle      = `font-size:13px;color:var(--text-2);line-height:1.7;margin-left:18px;list-style:disc;margin-bottom:4px`;
+  const demoBoxStyle = `background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.08));border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:16px 18px;margin:12px 0`;
+  const badgeBlue    = `background:var(--info-lt);color:var(--info);padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700`;
+  const badgeGreen   = `background:var(--primary-lt);color:var(--primary);padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700`;
+
+  const html = `
+  <style>
+    .panduan-tab-content { display:none; }
+    .panduan-tab-content.active { display:block; }
+    .panduan-tabs { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px; }
+    .panduan-tab { padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text-muted);transition:all 0.15s; }
+    .panduan-tab.active { background:var(--primary);color:#fff;border-color:var(--primary); }
+    .step-block { ${stepStyle} }
+    .step-num { ${numStyle} }
+    .step-body { flex:1;min-width:0; }
+    .step-title { font-size:14px;font-weight:700;margin-bottom:4px; }
+    .step-desc { font-size:13px;color:var(--text-2);line-height:1.7; }
+    .demo-scenario { ${demoBoxStyle} }
+    .demo-say { font-size:13px;font-style:italic;color:var(--text-2);border-left:3px solid var(--primary);padding-left:10px;margin:8px 0; }
+    .demo-action { font-size:12px;color:var(--text-muted);margin:4px 0; }
+    .role-pill { display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:700;margin:2px; }
+    .role-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0; }
+    .role-card { background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border); }
+    .role-card-icon { font-size:28px;margin-bottom:6px; }
+    .role-card-title { font-size:13px;font-weight:700;margin-bottom:6px; }
+    .role-card-li { font-size:12px;color:var(--text-muted);line-height:1.6;margin-left:14px;list-style:disc; }
+    .faq-item { margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:14px; }
+    .faq-q { font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text); }
+    .faq-a { font-size:13px;color:var(--text-2);line-height:1.7;margin-top:8px;padding-left:20px; }
+  </style>
+
+  <div class="page-header">
+    <div class="page-title">📖 Panduan Admin — MTS Al Huda Putri</div>
+    <div class="page-sub">Panduan lengkap khusus Admin Utama (TU) · Sistem Presensi v2.0</div>
+  </div>
+
+  <div style="${noteStyle}">
+    <span>🔐</span>
+    <div><strong>Halaman ini hanya bisa diakses oleh Admin Utama (TU).</strong> Simpan panduan ini dengan baik. Jangan berikan PIN TU kepada orang lain.</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="panduan-tabs">
+    <button class="panduan-tab active" onclick="switchPanduanTab('gambaran',this)">🏠 Gambaran Sistem</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('setup',this)">⚙️ Setup Pertama</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('harian',this)">📅 Operasi Harian</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('data',this)">📋 Kelola Data</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('laporan',this)">📊 Laporan</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('peran',this)">👥 Hak Akses</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('demo',this)">🎯 Skrip Demo</button>
+    <button class="panduan-tab" onclick="switchPanduanTab('faq',this)">❓ FAQ</button>
+  </div>
+
+  <!-- ══════ TAB: GAMBARAN ══════ -->
+  <div id="panduan-gambaran" class="panduan-tab-content active">
+
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">🏫</span><div><div style="font-size:15px;font-weight:700">Apa itu Sistem Presensi Digital MTS Al Huda?</div></div></div>
+      <div style="${bStyle}">
+        <p style="${pStyle}">Sistem ini menggantikan absensi manual (kertas) dengan sistem digital berbasis QR Code. Setiap siswa dan guru memiliki <strong>Kartu QR</strong> unik yang di-scan saat masuk sekolah.</p>
+        <p style="${pStyle}">Data absensi langsung tersimpan secara <strong>real-time</strong> ke Google Sheets dan bisa dilihat kapan saja dari mana saja melalui Dashboard ini.</p>
+
+        <h3 style="${h3Style}">🗺️ Komponen Sistem</h3>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:12px 0">
+          <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:22px;margin-bottom:6px">📷</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">Scanner (HP Petugas)</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">HP yang ditaruh di pintu masuk. Membuka kamera untuk scan QR siswa/guru. Bisa juga dipakai untuk scan absen guru masuk/pulang.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:22px;margin-bottom:6px">🪪</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">Kartu QR (Siswa & Guru)</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">Kartu ID fisik berisi QR Code unik. Bisa dicetak dari menu "Generator QR Card". Format CR-80 seperti kartu pelajar umumnya.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:22px;margin-bottom:6px">📊</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">Dashboard Admin (Halaman ini)</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">Pusat kendali sistem. Diakses TU, Kepala Sekolah, dan Wali Kelas dengan level akses berbeda-beda.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:22px;margin-bottom:6px">🗄️</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">Google Sheets (Database)</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">Semua data tersimpan di Google Sheets milik sekolah. Gratis, mudah di-backup, dan bisa diakses kapan saja.</div>
+          </div>
+        </div>
+
+        <h3 style="${h3Style}">🔄 Alur Kerja Sehari-hari</h3>
+        <div style="${codeStyle}">Siswa datang ke sekolah
+  → Tunjukkan Kartu QR ke HP Scanner di pintu gerbang
+  → Petugas scan kartu
+  → Status tercatat otomatis: HADIR / TERLAMBAT (sesuai jam)
+  → Data langsung muncul di Dashboard Admin
+  → TU bisa lihat rekap real-time
+  → Akhir bulan: cetak laporan & rekap wali kelas</div>
+
+        <div style="${tipStyle}">
+          <span>💡</span><div><strong>Keuntungan vs Absensi Manual:</strong> Tidak ada salah rekap, tidak ada data hilang, laporan langsung jadi otomatis, tidak ada buku absen yang menumpuk, dan jauh lebih profesional.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: SETUP ══════ -->
+  <div id="panduan-setup" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">⚙️</span><div><div style="font-size:15px;font-weight:700">Setup Awal (Lakukan Hanya 1 Kali)</div><div style="font-size:12px;color:var(--text-muted)">Ikuti urutan ini dengan teliti</div></div></div>
+      <div style="${bStyle}">
+
+        <div class="step-block">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Buka & Salin Kode Backend ke Google Apps Script</div>
+            <div class="step-desc">
+              Buka <strong>script.google.com</strong> → pilih project "Presensi MTS Al Huda" → klik file <code>Code.gs</code> → hapus semua isi lama (Ctrl+A, Delete) → buka file <code>backend/Code.gs</code> dari folder Mac/PC kamu → Ctrl+A → Ctrl+C → paste ke Apps Script → Ctrl+S (Save).
+            </div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Jalankan Fungsi setupSpreadsheet()</div>
+            <div class="step-desc">
+              Masih di Apps Script. Cari <strong>dropdown fungsi</strong> di toolbar atas (biasanya bertuliskan "doPost"). Klik → pilih <strong>setupSpreadsheet</strong> → klik ▶ <strong>Run</strong>. Jika muncul dialog izin, klik <em>Review Permissions</em> → pilih akun Google sekolah → <em>Allow</em>. Tunggu hingga muncul popup "Setup Selesai! (v2.0)".
+            </div>
+            <div style="${warnStyle}"><span>⚠️</span><div>Langkah ini <strong>wajib dilakukan</strong> setelah upgrade ke v2.0. Ia akan membuat sheet baru: <code>HARI_LIBUR</code> dan <code>AUDIT_LOG</code>.</div></div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Ganti PIN Default (SANGAT PENTING!)</div>
+            <div class="step-desc">
+              Buka <strong>Google Sheets</strong> → klik tab sheet <code>KONFIGURASI</code> → ganti nilai di kolom B untuk baris-baris berikut:
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;margin:10px 0">
+              <thead><tr style="background:var(--surface2)">
+                <th style="padding:8px 12px;text-align:left;border:1px solid var(--border)">Key (Kolom A)</th>
+                <th style="padding:8px 12px;text-align:left;border:1px solid var(--border)">Default (Kolom B)</th>
+                <th style="padding:8px 12px;text-align:left;border:1px solid var(--border)">Ganti Dengan</th>
+              </tr></thead>
+              <tbody>
+                <tr><td style="padding:8px 12px;border:1px solid var(--border)">PIN_TU</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--danger)">admin123</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--primary)">PIN kuat (min 6 karakter)</td></tr>
+                <tr><td style="padding:8px 12px;border:1px solid var(--border)">PIN_KEPSEK</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--danger)">kepsek123</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--primary)">PIN untuk Kepsek</td></tr>
+                <tr><td style="padding:8px 12px;border:1px solid var(--border)">PIN_WALI</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--danger)">wali123</td><td style="padding:8px 12px;border:1px solid var(--border);color:var(--primary)">PIN untuk Wali Kelas</td></tr>
+              </tbody>
+            </table>
+            <div style="${warnStyle}"><span>🔐</span><div>PIN default sangat lemah dan mudah ditebak. <strong>Ganti sebelum sistem dipakai!</strong> Simpan PIN baru di tempat yang aman.</div></div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Deploy Ulang Google Apps Script</div>
+            <div class="step-desc">
+              Di Apps Script → klik <strong>Deploy</strong> (pojok kanan atas) → <strong>Manage Deployments</strong> → klik ✏️ <strong>Edit</strong> → ubah Version dari <em>@HEAD</em> menjadi <strong>New Version</strong> → klik <strong>Deploy</strong>. Salin URL deployment baru jika berbeda dari sebelumnya.
+            </div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Import Data Siswa & Guru</div>
+            <div class="step-desc">
+              Pergi ke menu <strong>📋 Data Siswa</strong> → klik <em>⬆ Import Excel</em>. Siapkan file Excel dengan kolom: <code>NIS | Nama | Kelas | Jenis Kelamin | Nama Ortu | No HP Ortu</code>. Lakukan hal yang sama untuk Data Guru.
+            </div>
+            <div style="${noteStyle}"><span>💡</span><div>Pastikan kolom NIS di Excel diformat sebagai <strong>Text</strong> (bukan Number) agar angka 0 di depan tidak hilang.</div></div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <div class="step-title">Daftarkan HP Scanner</div>
+            <div class="step-desc">
+              Pergi ke menu <strong>📱 Perangkat Scanner</strong> → klik <em>+ Daftarkan HP Baru</em> → isi nama HP dan lokasi → klik <em>Generate Token</em>. Catat token yang muncul. Buka halaman scanner di HP petugas → masukkan token tersebut → selesai!
+            </div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">7</div>
+          <div class="step-body">
+            <div class="step-title">Cetak Kartu QR untuk Semua Siswa & Guru</div>
+            <div class="step-desc">
+              Klik tombol <strong>🪪 Generator QR Card</strong> di sidebar bawah → pilih tipe (Siswa/Guru) → pilih tema warna → klik <em>Generate Kartu</em> → klik <em>🖨️ Print Semua</em>. Gunakan printer dengan kertas karton ukuran A4. Setiap lembar memuat ±6-9 kartu yang bisa dipotong.
+            </div>
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">8</div>
+          <div class="step-body">
+            <div class="step-title">Input Hari Libur Nasional & Sekolah</div>
+            <div class="step-desc">
+              Pergi ke menu <strong>📅 Hari Libur</strong> → tambahkan semua hari libur nasional dan libur sekolah di awal tahun ajaran. Sistem akan otomatis menonaktifkan absensi dan memberikan peringatan di hari-hari tersebut.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: HARIAN ══════ -->
+  <div id="panduan-harian" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">📅</span><div><div style="font-size:15px;font-weight:700">Operasi Harian</div><div style="font-size:12px;color:var(--text-muted)">Yang perlu dilakukan setiap hari</div></div></div>
+      <div style="${bStyle}">
+
+        <h3 style="${h3Style}">🌅 Pagi Hari (Sebelum Jam Masuk)</h3>
+        <div class="step-block">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Pastikan HP Scanner Menyala & Terhubung Internet</div>
+            <div class="step-desc">HP scanner harus terhubung ke WiFi sekolah. Buka halaman scanner, pastikan kamera aktif dan muncul tulisan "Siap Scan". Kalau tidak muncul, cek apakah token masih aktif di menu Perangkat.</div>
+          </div>
+        </div>
+        <div class="step-block">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Cek Dashboard — Tab Beranda</div>
+            <div class="step-desc">Buka Dashboard → Beranda. Pastikan statistik menunjukkan angka 0 di awal hari. Jika ada data dari hari sebelumnya yang tersisa, coba refresh (↺ Refresh).</div>
+          </div>
+        </div>
+
+        <h3 style="${h3Style}">📷 Saat Jam Masuk Berlangsung</h3>
+        <div class="step-block">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Pantau Absensi Real-Time</div>
+            <div class="step-desc">
+              Klik menu <strong>👩‍🎓 Absensi Siswa</strong> → data scan akan terus diperbarui. Klik tombol <em>↺ Refresh</em> setiap beberapa menit untuk melihat update terbaru.<br><br>
+              <strong>Arti Status:</strong>
+              <ul>
+                <li style="${liStyle}"><span class="badge badge-hadir">HADIR</span> — Scan sebelum jam toleransi habis</li>
+                <li style="${liStyle}"><span class="badge badge-terlambat">TERLAMBAT</span> — Scan setelah jam toleransi (dikonfigurasi di Pengaturan)</li>
+                <li style="${liStyle}"><span class="badge badge-belum">Belum Absen</span> — Belum scan sama sekali</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="${h3Style}">✏️ Input Manual (Jika Siswa/Guru Lupa Kartu)</h3>
+        <div class="step-block">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Cara Input Manual Siswa</div>
+            <div class="step-desc">
+              Pergi ke <strong>Absensi Siswa</strong> → klik tombol <em>+ Input Manual</em> → pilih nama siswa dari dropdown → pilih status (HADIR/IZIN/SAKIT/ALPA) → isi keterangan jika perlu → klik <em>Simpan</em>.<br><br>
+              Atau untuk siswa yang ada di daftar "Belum Absen", klik tombol <em>Input Status</em> di sebelah nama siswa tersebut.
+            </div>
+            <div style="${tipStyle}"><span>💡</span><div>Gunakan tombol <strong>"Tandai Semua Alpa"</strong> di akhir hari untuk menandai semua siswa yang belum absen sekaligus sebagai ALPA.</div></div>
+          </div>
+        </div>
+
+        <h3 style="${h3Style}">🌇 Akhir Hari</h3>
+        <div class="step-block">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Tandai Siswa Tidak Hadir</div>
+            <div class="step-desc">Di menu Absensi Siswa, scroll ke bawah — ada daftar "🚫 Belum Absen". Tandai satu per satu (ALPA/SAKIT/IZIN) atau gunakan tombol "Tandai Semua Alpa".</div>
+          </div>
+        </div>
+        <div class="step-block">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <div class="step-title">Cek Absensi Guru</div>
+            <div class="step-desc">Pergi ke <strong>👨‍🏫 Absensi Guru</strong> → pastikan semua guru sudah tercatat. Lakukan input manual untuk guru yang tidak hadir.</div>
+          </div>
+        </div>
+        <div class="step-block">
+          <div class="step-num">7</div>
+          <div class="step-body">
+            <div class="step-title">Export Data Harian (Opsional)</div>
+            <div class="step-desc">Klik tombol <em>⬇ Export</em> di halaman Absensi Siswa atau Absensi Guru untuk mengunduh file Excel laporan hari itu.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: DATA ══════ -->
+  <div id="panduan-data" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">📋</span><div><div style="font-size:15px;font-weight:700">Kelola Data Master</div></div></div>
+      <div style="${bStyle}">
+
+        <h3 style="${h3Style}">👩‍🎓 Data Siswa</h3>
+        <p style="${pStyle}">Pergi ke menu <strong>📋 Data Siswa</strong> untuk melihat dan mengelola seluruh data siswa.</p>
+        <ul>
+          <li style="${liStyle}"><strong>+ Tambah Siswa</strong> — Isi form NIS, Nama, Kelas, dll. Pastikan NIS unik dan tidak duplikat.</li>
+          <li style="${liStyle}"><strong>✏️ Edit</strong> — Klik ikon pensil untuk mengubah data siswa yang ada.</li>
+          <li style="${liStyle}"><strong>📁 Arsip</strong> — Untuk siswa yang lulus, pindah, atau DO. <em>Jangan gunakan Hapus!</em> Data absensi historis tetap aman saat diarsip.</li>
+          <li style="${liStyle}"><strong>🗑️ Hapus</strong> — Hanya untuk data yang salah input. Data absensi tidak ikut terhapus.</li>
+          <li style="${liStyle}"><strong>⬆ Import Excel</strong> — Import massal dari file Excel. Format kolom: NIS | Nama | Kelas | Jenis Kelamin | Nama Ortu | No HP Ortu</li>
+          <li style="${liStyle}"><strong>⬇ Export</strong> — Download semua data siswa ke Excel.</li>
+        </ul>
+
+        <div style="${warnStyle}"><span>⚠️</span><div>Ketika Import Excel, <strong>semua data siswa lama akan terganti</strong>. Pastikan file Excel sudah benar sebelum import. Lakukan backup dulu dengan klik Export.</div></div>
+
+        <h3 style="${h3Style}">👨‍🏫 Data Guru & Tendik</h3>
+        <p style="${pStyle}">Sama seperti data siswa, pergi ke <strong>👥 Data Guru/Tendik</strong>. Isi NIG (Nomor Induk Guru), Nama, Jabatan, Mata Pelajaran, dan Tipe (Guru/TU/Tendik).</p>
+
+        <h3 style="${h3Style}">📅 Hari Libur</h3>
+        <p style="${pStyle}">Pergi ke <strong>📅 Hari Libur</strong>. Input semua hari libur di awal tahun ajaran:</p>
+        <ul>
+          <li style="${liStyle}">Libur Nasional (Idul Fitri, Natal, dll)</li>
+          <li style="${liStyle}">Libur Sekolah (ujian, libur semester, dll)</li>
+          <li style="${liStyle}">Hari-hari yang tidak ada kegiatan belajar</li>
+        </ul>
+        <div style="${noteStyle}"><span>ℹ️</span><div>Pada hari libur yang sudah diinput, scanner akan menampilkan peringatan dan absensi akan ditolak. Laporan bulanan otomatis mengecualikan hari libur dari perhitungan.</div></div>
+
+        <h3 style="${h3Style}">📱 Perangkat Scanner</h3>
+        <p style="${pStyle}">Pergi ke <strong>📱 Perangkat Scanner</strong>:</p>
+        <ul>
+          <li style="${liStyle}"><strong>+ Daftarkan HP Baru</strong> — Isi nama HP dan lokasi → sistem buat Token unik → catat/berikan ke petugas yang megang HP tersebut.</li>
+          <li style="${liStyle}"><strong>🚫 Nonaktifkan</strong> — Gunakan ini jika HP hilang, rusak, atau petugas berganti. HP tersebut langsung tidak bisa scan lagi.</li>
+        </ul>
+        <div style="${tipStyle}"><span>💡</span><div>Token hanya perlu dimasukkan <strong>1x saja</strong> di HP petugas. Setelah itu, HP langsung bisa scan kapan saja tanpa perlu login ulang.</div></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: LAPORAN ══════ -->
+  <div id="panduan-laporan" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">📊</span><div><div style="font-size:15px;font-weight:700">Laporan & Rekap</div></div></div>
+      <div style="${bStyle}">
+
+        <h3 style="${h3Style}">📊 Rekap Siswa (Bulanan)</h3>
+        <p style="${pStyle}">Menu <strong>📊 Rekap Siswa</strong> → pilih Bulan dan Kelas → klik Tampilkan. Hasilnya berupa tabel per siswa dengan jumlah H (Hadir), T (Terlambat), I (Izin), S (Sakit), A (Alpa) beserta persentase kehadiran.</p>
+        <p style="${pStyle}">Klik <em>⬇ Export Excel</em> untuk mendownload laporan tersebut.</p>
+
+        <h3 style="${h3Style}">📊 Rekap Guru (Bulanan)</h3>
+        <p style="${pStyle}">Menu <strong>📊 Rekap Guru</strong> → pilih Bulan → klik Tampilkan. Format sama dengan rekap siswa, ditambah kolom <em>Pulang Awal</em>.</p>
+
+        <h3 style="${h3Style}">📋 Rekap Wali Kelas</h3>
+        <p style="${pStyle}">Menu <strong>📋 Rekap Wali Kelas</strong> → pilih Bulan dan Kelas → klik Tampilkan. Hasilnya adalah tabel daftar hadir format <em>tanggal × nama</em> dengan kode:</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+          <span class="badge badge-hadir">H = Hadir</span>
+          <span class="badge badge-terlambat">T = Terlambat</span>
+          <span class="badge badge-izin">I = Izin</span>
+          <span class="badge badge-sakit">S = Sakit</span>
+          <span class="badge badge-alpa">A = Alpa</span>
+          <span class="badge badge-belum">Kosong = Belum Ada Data</span>
+        </div>
+        <p style="${pStyle}">Klik tombol <em>🖨️ Print</em> untuk mencetak langsung dari browser. Cocok untuk diserahkan ke wali kelas setiap bulan.</p>
+
+        <h3 style="${h3Style}">📜 Audit Log (Khusus TU)</h3>
+        <p style="${pStyle}">Menu <strong>📜 Audit Log</strong> menampilkan <em>semua perubahan data</em> yang pernah terjadi di sistem: siapa yang mengubah, apa yang diubah, dan kapan.</p>
+        <div style="${noteStyle}"><span>🔒</span><div>Audit Log tidak bisa dihapus atau dimanipulasi. Ini adalah catatan permanen untuk akuntabilitas sistem.</div></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: PERAN ══════ -->
+  <div id="panduan-peran" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">👥</span><div><div style="font-size:15px;font-weight:700">Hak Akses Pengguna</div></div></div>
+      <div style="${bStyle}">
+        <p style="${pStyle}">Sistem ini memiliki 3 level pengguna. Semuanya login menggunakan PIN yang berbeda.</p>
+
+        <div class="role-grid">
+          <div class="role-card">
+            <div class="role-card-icon">🏢</div>
+            <div class="role-card-title"><span style="${badgeGreen}">TU</span> — Admin Utama</div>
+            <ul>
+              <li class="role-card-li">✅ Semua fitur tersedia</li>
+              <li class="role-card-li">✅ Input & edit absensi</li>
+              <li class="role-card-li">✅ Tambah/edit/hapus siswa & guru</li>
+              <li class="role-card-li">✅ Kelola hari libur</li>
+              <li class="role-card-li">✅ Kelola perangkat scanner</li>
+              <li class="role-card-li">✅ Pengaturan sistem & PIN</li>
+              <li class="role-card-li">✅ Audit Log</li>
+              <li class="role-card-li">✅ <strong>Panduan Admin (halaman ini)</strong></li>
+            </ul>
+          </div>
+          <div class="role-card">
+            <div class="role-card-icon">👔</div>
+            <div class="role-card-title"><span style="${badgeBlue}">KEPSEK</span> — Kepala Sekolah</div>
+            <ul>
+              <li class="role-card-li">✅ Lihat semua laporan</li>
+              <li class="role-card-li">✅ Lihat data siswa & guru (read-only)</li>
+              <li class="role-card-li">✅ Lihat perangkat scanner</li>
+              <li class="role-card-li">❌ Tidak bisa edit data</li>
+              <li class="role-card-li">❌ Tidak bisa input absensi</li>
+              <li class="role-card-li">❌ Tidak bisa akses Pengaturan</li>
+            </ul>
+          </div>
+          <div class="role-card">
+            <div class="role-card-icon">👩‍🏫</div>
+            <div class="role-card-title"><span style="background:var(--purple-lt);color:var(--purple);padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">WALI</span> — Wali Kelas</div>
+            <ul>
+              <li class="role-card-li">✅ Lihat absensi siswa harian</li>
+              <li class="role-card-li">✅ Rekap Wali Kelas (bisa print)</li>
+              <li class="role-card-li">✅ Rekap bulanan siswa</li>
+              <li class="role-card-li">❌ Tidak bisa akses Data Master</li>
+              <li class="role-card-li">❌ Tidak bisa edit data apapun</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 style="${h3Style}">🔑 Cara Ganti PIN</h3>
+        <p style="${pStyle}">Pergi ke menu <strong>⚙️ Pengaturan</strong> → bagian "Ganti PIN" → isi PIN baru di kolom yang sesuai → klik tombol Ganti PIN.</p>
+        <div style="${warnStyle}"><span>⚠️</span><div>PIN disimpan <strong>aman di server</strong> (Google Sheets), bukan di kode program. Jangan lupa catat PIN baru di tempat yang aman setelah menggantinya!</div></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: DEMO ══════ -->
+  <div id="panduan-demo" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">🎯</span><div><div style="font-size:15px;font-weight:700">Skrip Demo untuk Presentasi ke Pihak Sekolah</div><div style="font-size:12px;color:var(--text-muted)">Ikuti langkah ini saat demo agar terlihat profesional</div></div></div>
+      <div style="${bStyle}">
+
+        <div style="${warnStyle}"><span>📋</span><div><strong>Persiapan sebelum demo:</strong> Pastikan ada 2-3 data siswa dummy yang sudah diinput, kartu QR sudah dicetak, HP scanner sudah terdaftar dan terhubung internet, dan pastikan kamu sudah login sebagai TU di laptop/komputer yang dipakai presentasi.</div></div>
+
+        <div class="demo-scenario">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🎬 Skenario 1 — Buka Dashboard & Tunjukkan Beranda</div>
+          <div class="demo-say">"Ini adalah halaman beranda yang langsung menampilkan statistik kehadiran hari ini secara real-time. Bisa dilihat jumlah siswa yang hadir, terlambat, izin, sakit, dan yang belum absen. Semua data ini diperbarui otomatis setiap kali ada siswa yang scan kartu."</div>
+          <div class="demo-action">→ Klik menu Beranda, tunjukkan kartu-kartu statistik</div>
+          <div class="demo-action">→ Tunjukkan grafik kehadiran per kelas</div>
+          <div class="demo-action">→ Tunjukkan daftar scan terakhir</div>
+        </div>
+
+        <div class="demo-scenario">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🎬 Skenario 2 — Demo Scan Langsung (Paling Memukau!)</div>
+          <div class="demo-say">"Saya akan demo cara kerja absensinya. Siswa cukup menunjukkan kartu ini ke HP yang ada di gerbang..."</div>
+          <div class="demo-action">→ Ambil HP scanner, tunjukkan tampilan kameranya yang aktif</div>
+          <div class="demo-action">→ Scan salah satu kartu QR siswa dummy</div>
+          <div class="demo-action">→ HP berbunyi ✅ dan menampilkan "HADIR - [nama siswa]"</div>
+          <div class="demo-action">→ Segera refresh Dashboard di laptop → tunjukkan nama siswa sudah muncul di daftar</div>
+          <div class="demo-say">"Lihat, dalam hitungan detik data sudah masuk ke dashboard. Tidak perlu rekap manual sama sekali."</div>
+        </div>
+
+        <div class="demo-scenario">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🎬 Skenario 3 — Tunjukkan Laporan Wali Kelas</div>
+          <div class="demo-say">"Untuk wali kelas, ada laporan khusus berbentuk tabel daftar hadir bulanan seperti ini. Wali kelas bisa login sendiri dan melihat atau mencetak laporan kapan saja."</div>
+          <div class="demo-action">→ Klik menu Rekap Wali Kelas</div>
+          <div class="demo-action">→ Pilih bulan dan kelas</div>
+          <div class="demo-action">→ Klik Tampilkan → tunjukkan tabel H/T/I/S/A</div>
+          <div class="demo-action">→ Klik 🖨️ Print untuk tunjukkan bisa langsung dicetak</div>
+        </div>
+
+        <div class="demo-scenario">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🎬 Skenario 4 — Tunjukkan Laporan Rekap Bulanan</div>
+          <div class="demo-say">"Setiap akhir bulan, laporan rekap bisa langsung diexport ke Excel dengan satu klik. Tidak perlu rekap manual dari buku absen."</div>
+          <div class="demo-action">→ Klik menu Rekap Siswa</div>
+          <div class="demo-action">→ Pilih bulan, klik Tampilkan</div>
+          <div class="demo-action">→ Klik ⬇ Export Excel → tunjukkan file Excel yang terdownload</div>
+        </div>
+
+        <div class="demo-scenario">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🎬 Skenario 5 — Tunjukkan Keamanan Sistem</div>
+          <div class="demo-say">"Sistem ini juga aman. Setiap perubahan data tercatat di Audit Log — siapa yang mengubah, apa yang diubah, dan kapannya. Tidak ada yang bisa memanipulasi data tanpa terdeteksi."</div>
+          <div class="demo-action">→ Klik menu Audit Log</div>
+          <div class="demo-action">→ Tunjukkan daftar log perubahan</div>
+        </div>
+
+        <div class="demo-scenario">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🎬 Penutup — Pertanyaan Umum dari Pihak Sekolah</div>
+          <div style="margin-top:8px">
+            <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:4px">❓ "Bagaimana kalau internet mati?"</div>
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:12px">→ "Jika internet mati, scanner tidak bisa menyimpan data. Namun absensi bisa diinput manual oleh TU setelah internet kembali, menggunakan fitur Input Manual di dashboard."</div>
+
+            <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:4px">❓ "Bagaimana kalau siswa lupa bawa kartu?"</div>
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:12px">→ "TU atau petugas bisa input manual dari dashboard. Data tetap tercatat dengan status yang sesuai."</div>
+
+            <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:4px">❓ "Biayanya berapa?"</div>
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:12px">→ "Sistem ini berbasis Google Sheets dan GitHub Pages yang <strong>100% GRATIS</strong>. Biaya hanya untuk mencetak kartu QR dan membeli HP/tablet untuk scanner jika belum ada."</div>
+
+            <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:4px">❓ "Bagaimana dengan keamanan data?"</div>
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:12px">→ "Data tersimpan di Google Sheets milik akun Google sekolah sendiri, bukan di server pihak ketiga. Akses dibatasi dengan PIN berlapis untuk TU, Kepala Sekolah, dan Wali Kelas."</div>
+
+            <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:4px">❓ "Bisa diakses dari HP?"</div>
+            <div style="font-size:13px;color:var(--text-2);margin-bottom:12px">→ "Bisa! Dashboard responsif dan bisa dibuka dari HP, tablet, atau laptop. Wali kelas cukup buka link dari HP masing-masing."</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: FAQ ══════ -->
+  <div id="panduan-faq" class="panduan-tab-content">
+    <div style="${sectionStyle}">
+      <div style="${hStyle}"><span style="font-size:20px">❓</span><div><div style="font-size:15px;font-weight:700">FAQ & Troubleshooting</div></div></div>
+      <div style="${bStyle}">
+
+        <div class="faq-item">
+          <div class="faq-q">🔴 Scanner muncul error "Device tidak terdaftar"</div>
+          <div class="faq-a">Token di HP scanner belum diisi atau sudah dinonaktifkan. Buka <strong>Perangkat Scanner</strong> → daftarkan ulang HP tersebut → dapatkan token baru → masukkan di HP scanner (tekan tombol pengaturan/roda gigi di pojok HP scanner).</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🔴 NIS/NIG di dashboard tampil tanpa angka 0 di depan</div>
+          <div class="faq-a">Ini terjadi karena Excel membaca NIS sebagai angka. Solusi: format kolom NIS di Excel sebagai <strong>Text</strong> (klik kanan kolom → Format Cells → Text) sebelum import ulang. Sistem sudah diperbarui untuk mencegah masalah ini saat tambah data baru.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🔴 QR Card tidak muncul / error "QRCode is not defined"</div>
+          <div class="faq-a">Koneksi internet terganggu saat halaman dimuat. Refresh halaman Generator QR Card. Sistem sudah dilengkapi fallback 3 lapis — jika library QR gagal load, akan otomatis beralih ke sistem gambar QR online.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🔴 Login gagal terus padahal PIN benar</div>
+          <div class="faq-a">Pastikan kamu sudah melakukan <strong>Deploy ulang Apps Script</strong> setelah mengubah kode backend. Coba juga buka Google Sheets → sheet KONFIGURASI → pastikan PIN yang diketik benar-benar tersimpan di kolom B baris yang tepat.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🔴 Sheet HARI_LIBUR atau AUDIT_LOG tidak ada di Google Sheets</div>
+          <div class="faq-a">Fungsi <code>setupSpreadsheet()</code> belum dijalankan. Buka Apps Script → ubah dropdown ke <strong>setupSpreadsheet</strong> → klik ▶ Run → izinkan akses jika diminta.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🔴 Data absensi tidak masuk setelah scan</div>
+          <div class="faq-a">Cek: (1) Apakah HP scanner terhubung internet? (2) Apakah token masih aktif? (3) Coba refresh dashboard. Jika masih tidak muncul, cek halaman scanner — biasanya ada pesan error yang menjelaskan masalahnya.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🟡 Cara backup data?</div>
+          <div class="faq-a">Data sudah otomatis aman di Google Drive / Google Sheets milik akun Google sekolah. Untuk backup manual: buka Google Sheets → File → Download → Microsoft Excel (.xlsx).</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🟡 Cara update jam masuk atau toleransi?</div>
+          <div class="faq-a">Pergi ke menu <strong>⚙️ Pengaturan</strong> → bagian "Jam & Toleransi" → ubah nilai yang diinginkan → klik Simpan Konfigurasi. Tidak perlu deploy ulang Apps Script.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q">🟡 Cara tambah kelas baru (misal kelas X)?</div>
+          <div class="faq-a">Buka file <code>assets/js/config.js</code> → ubah <code>KELAS_LIST</code> → tambahkan kelas baru. Contoh: <code>KELAS_LIST: ['VII', 'VIII', 'IX', 'X']</code>. Upload ulang file ke GitHub setelah diubah.</div>
+        </div>
+
+        <div style="${tipStyle}"><span>📞</span><div><strong>Butuh bantuan lebih lanjut?</strong> Cek kembali panduan ini atau hubungi pengembang sistem. Sertakan tangkapan layar error yang muncul untuk memudahkan diagnosa.</div></div>
+
+      </div>
+    </div>
+  </div>`;
+
+  showContent(html);
+
+  // Scroll ke atas
+  document.getElementById('content').scrollTop = 0;
+}
+
+function switchPanduanTab(tab, btn) {
+  // Sembunyikan semua konten tab
+  document.querySelectorAll('.panduan-tab-content').forEach(el => el.classList.remove('active'));
+  // Nonaktifkan semua tombol tab
+  document.querySelectorAll('.panduan-tab').forEach(el => el.classList.remove('active'));
+  // Tampilkan tab yang dipilih
+  const el = document.getElementById('panduan-' + tab);
+  if (el) el.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════
 // MODALS — INPUT MANUAL SISWA (BUGFIX)
 // ══════════════════════════════════════════════════════════════
 function showInputManualSiswa(tanggal) {
@@ -2150,6 +2843,45 @@ async function readExcel(file) {
     reader.readAsBinaryString(file);
   });
 }
+</script>
+<script>
+// ── PWA: Register Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ── SPLASH + THEME + FOOTER INIT ──
+(function initDashboard() {
+  // Apply saved theme immediately to prevent flash
+  const saved = localStorage.getItem('mts_theme');
+  const isDark = saved ? saved === 'dark' : true;
+  if (!isDark) {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('dash-theme-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+
+function toggleDashTheme() {
+  const isDark = !document.body.classList.contains('light-mode');
+  if (isDark) {
+    document.body.classList.add('light-mode');
+    document.getElementById('dash-theme-btn').textContent = '☀️';
+    localStorage.setItem('mts_theme', 'light');
+  } else {
+    document.body.classList.remove('light-mode');
+    document.getElementById('dash-theme-btn').textContent = '🌙';
+    localStorage.setItem('mts_theme', 'dark');
+  }
+}
+
+// Dismiss splash after 2s
+window.addEventListener('DOMContentLoaded', () => {
+  const splash = document.getElementById('splash-screen');
+  if (splash) setTimeout(() => splash.classList.add('hide'), 2000);
+});
 </script>
 </body>
 </html>

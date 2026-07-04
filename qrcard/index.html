@@ -22,6 +22,11 @@
     }
   </script>
   <script src="../assets/js/config.js"></script>
+  <link rel="manifest" href="../dashboard/manifest.json" />
+  <link rel="icon" type="image/x-icon" href="../assets/icons/favicon.ico" />
+  <link rel="apple-touch-icon" href="../assets/icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#10b981" />
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,6 +35,10 @@
   --warn: #f59e0b;
   --bg: #0a1628; --surface: #111f38; --surface2: #1a2e4a;
   --text: #f1f5f9; --text-muted: #64748b; --border: rgba(255,255,255,0.08);
+}
+body.light-mode {
+  --bg: #f0f4f8; --surface: #ffffff; --surface2: #f1f5f9;
+  --text: #1e293b; --text-muted: #64748b; --border: rgba(0,0,0,0.08);
 }
 body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -194,12 +203,33 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header-title">🪪 Generator QR Card</div>
-    <div class="header-sub">MTS Al Huda Putri Malang</div>
+<div id="splash-screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity 0.5s,visibility 0.5s">
+  <img src="../assets/icons/logo-mts.png" alt="Logo" style="width:90px;height:90px;object-fit:contain;animation:splashPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both" />
+  <div style="font-size:16px;font-weight:800;text-align:center;color:var(--text)">Generator QR Card<br/>MTS Al Huda Putri</div>
+  <div style="width:140px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden">
+    <div style="height:100%;background:#10b981;border-radius:2px;animation:splashLoad 1.5s 0.3s ease forwards;width:0"></div>
   </div>
-  <a href="../dashboard/" class="back-btn">← Kembali ke Dashboard</a>
+</div>
+<style>
+  @keyframes splashPop  { from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1} }
+  @keyframes splashLoad { from{width:0}to{width:100%} }
+  .qr-footer{text-align:center;padding:12px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:8px}
+  .qr-footer a{color:#10b981;text-decoration:none;font-weight:600}
+  .theme-toggle-qr{background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:5px 10px;font-size:14px;cursor:pointer;color:var(--text);transition:all 0.2s}
+  body.light-mode .qr-footer{background:#fff}
+</style>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <img src="../assets/icons/logo-mts.png" alt="Logo" style="width:32px;height:32px;object-fit:contain" />
+    <div>
+      <div class="header-title">🪪 Generator QR Card</div>
+      <div class="header-sub">MTS Al Huda Putri Malang</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-toggle-qr" id="qr-theme-btn" onclick="toggleQrTheme()">🌙</button>
+    <a href="../dashboard/" class="back-btn">← Dashboard</a>
+  </div>
 </div>
 
 <div class="container">
@@ -413,6 +443,27 @@ function showToast(msg) {
 
 // Init
 onTipeChange();
+</script>
+<div class="qr-footer">Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener">weverx.com</a></div>
+<script>
+// Theme
+(function(){
+  const saved = localStorage.getItem('mts_theme');
+  const isDark = saved ? saved === 'dark' : true;
+  if (!isDark) {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('qr-theme-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+  // Splash
+  const splash = document.getElementById('splash-screen');
+  if (splash) setTimeout(() => { splash.style.opacity='0'; splash.style.visibility='hidden'; }, 1600);
+})();
+function toggleQrTheme() {
+  const isDark = !document.body.classList.contains('light-mode');
+  if (isDark) { document.body.classList.add('light-mode'); document.getElementById('qr-theme-btn').textContent='☀️'; localStorage.setItem('mts_theme','light'); }
+  else { document.body.classList.remove('light-mode'); document.getElementById('qr-theme-btn').textContent='🌙'; localStorage.setItem('mts_theme','dark'); }
+}
 </script>
 </body>
 </html>
