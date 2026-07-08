@@ -342,7 +342,14 @@ async function generateCards() {
 
     const cardsHtml = data.map((item, idx) => {
       const isSiswa = tipe === 'siswa';
-      const qrValue = isSiswa ? `MTS-S-${item.nis}` : `MTS-G-${item.nig}`;
+      // [BUG-01] Prefix berdasarkan tipe — konsisten dengan routing di backend (prosesAbsen)
+      let qrValue;
+      if (isSiswa) {
+        qrValue = `MTS-S-${item.nis}`;
+      } else {
+        const isTU = item.tipe && (item.tipe.toLowerCase().includes('tu') || item.tipe.toLowerCase().includes('tendik'));
+        qrValue = `${isTU ? 'MTS-TU-' : 'MTS-G-'}${item.nig}`;
+      }
       const name    = item.nama || '-';
       const id      = isSiswa ? item.nis : item.nig;
       const sub     = isSiswa ? `Kelas ${item.kelas}` : (item.jabatan || item.tipe || 'Guru');
@@ -387,7 +394,14 @@ async function generateCards() {
     for (let i = 0; i < data.length; i++) {
       const item    = data[i];
       const isSiswa = tipe === 'siswa';
-      const qrValue = isSiswa ? `MTS-S-${item.nis}` : `MTS-G-${item.nig}`;
+      // [BUG-01] Gunakan prefix yang sama persis dengan yang ada di kartu (konsisten)
+      let qrValue;
+      if (isSiswa) {
+        qrValue = `MTS-S-${item.nis}`;
+      } else {
+        const isTU = item.tipe && (item.tipe.toLowerCase().includes('tu') || item.tipe.toLowerCase().includes('tendik'));
+        qrValue = `${isTU ? 'MTS-TU-' : 'MTS-G-'}${item.nig}`;
+      }
       const canvas  = document.getElementById(`qr-${i}`);
       if (canvas) await generateQR(canvas, qrValue);
     }

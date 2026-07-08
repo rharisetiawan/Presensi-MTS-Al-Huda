@@ -1,9 +1,10 @@
 {
   "name": "Scanner Presensi — MTS Al Huda Putri",
-  "short_name": "Presensi MTS",
+  "short_name": "Scanner MTS",
+  "id": "scanner-mts-alhuda",
   "description": "Aplikasi scanner presensi siswa dan guru MTS Al Huda Putri Malang berbasis QR Code",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/scanner/index.html",
+  "scope": "/scanner/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a1628",

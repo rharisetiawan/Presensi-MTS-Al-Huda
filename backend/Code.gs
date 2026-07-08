@@ -35,7 +35,7 @@ function doPost(e) {
     const action = data.action;
 
     // Action publik tidak butuh session
-    const PUBLIC_ACTIONS = ['login', 'validate_session', 'scan', 'register_device'];
+    const PUBLIC_ACTIONS = ['login', 'validate_session', 'scan']; // [BUG-06] register_device wajib login
 
     if (!PUBLIC_ACTIONS.includes(action)) {
       const role = _validateSession(data.sessionToken);
@@ -291,9 +291,14 @@ function validateDeviceResponse(token) {
 }
 
 function registerDevice(data) {
+  // [BUG-06] Hanya TU yang boleh mendaftarkan perangkat — cek setelah session divalidasi di doPost
+  if (data._role !== 'TU') {
+    return jsonResponse({ success: false, code: 'UNAUTHORIZED', message: 'Hanya TU yang dapat mendaftarkan perangkat baru.' });
+  }
   const sheet = getSheet(SHEET_DEVICE_TOKENS);
   const token = _generateDeviceToken();
   sheet.appendRow([token, data.name || 'HP Scanner', data.location || 'Pintu Masuk', todayJakarta(), 'AKTIF']);
+  _addAuditLog('REGISTER_DEVICE', token, '', data.name || 'HP Scanner', data._role, data._role);
   return jsonResponse({ success: true, token, message: 'Device berhasil didaftarkan.' });
 }
 
@@ -456,14 +461,29 @@ function prosesAbsen(data) {
     return jsonResponse({ success: false, code: 'HARI_LIBUR', message: 'Hari ini libur: ' + liburInfo + '. Tidak ada pencatatan absensi.' });
   }
 
-  // Cek hari Minggu
-  const hari = new Date();
-  if (Utilities.formatDate(hari, TIMEZONE, 'E') === 'Sun') {
+  // [BUG-07] Cek hari Minggu — pakai getDay() via Date agar tidak bergantung locale server
+  const jakartaDateStr = Utilities.formatDate(new Date(), TIMEZONE, 'yyyy-MM-dd');
+  const jakartaDate    = new Date(jakartaDateStr + 'T12:00:00+07:00');
+  if (jakartaDate.getDay() === 0) {
     return jsonResponse({ success: false, code: 'HARI_LIBUR', message: 'Hari ini Minggu. Tidak ada pencatatan absensi.' });
   }
 
-  const jamMenitSekarang = nowMinutes();
-  const jamStr           = nowJakarta();
+  // [BUG-04] Gunakan clientTimestamp jika ada dan masih valid (dalam 1 jam)
+  let jamMenitSekarang, jamStr;
+  if (data.clientTimestamp) {
+    const clientDate = new Date(data.clientTimestamp);
+    const diffMs     = Math.abs(Date.now() - clientDate.getTime());
+    if (diffMs <= 60 * 60 * 1000) {
+      jamStr           = Utilities.formatDate(clientDate, TIMEZONE, 'HH:mm:ss');
+      const h          = parseInt(Utilities.formatDate(clientDate, TIMEZONE, 'HH'));
+      const m          = parseInt(Utilities.formatDate(clientDate, TIMEZONE, 'mm'));
+      jamMenitSekarang = h * 60 + m;
+    }
+  }
+  if (!jamStr) {
+    jamMenitSekarang = nowMinutes();
+    jamStr           = nowJakarta();
+  }
 
   if (qrCode.startsWith('MTS-S-')) {
     return _absenSiswa(qrCode, tanggal, jamMenitSekarang, jamStr, config, data);
@@ -475,97 +495,128 @@ function prosesAbsen(data) {
 }
 
 function _absenSiswa(qrCode, tanggal, jamMenit, jamStr, config, reqData) {
-  const nis        = qrCode.replace('MTS-S-', '');
-  const sheetSiswa = getSheet(SHEET_SISWA);
-  const rows       = sheetSiswa.getDataRange().getValues();
-  let siswa        = null;
+  // [BUG-02] LockService mencegah race condition jika 2 request datang bersamaan
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) {
+    return jsonResponse({ success: false, message: 'Server sibuk, coba lagi dalam beberapa detik.' });
+  }
+  try {
+    const nis        = qrCode.replace('MTS-S-', '');
+    const sheetSiswa = getSheet(SHEET_SISWA);
+    const rows       = sheetSiswa.getDataRange().getValues();
+    let siswa        = null;
 
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(nis) && rows[i][6] !== 'NONAKTIF' && rows[i][6] !== 'LULUS' && rows[i][6] !== 'PINDAH' && rows[i][6] !== 'DO') {
-      siswa = { nis: rows[i][0], nama: rows[i][1], kelas: rows[i][2], jenisKelamin: rows[i][3] };
-      break;
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(nis) && rows[i][6] !== 'NONAKTIF' && rows[i][6] !== 'LULUS' && rows[i][6] !== 'PINDAH' && rows[i][6] !== 'DO') {
+        siswa = { nis: rows[i][0], nama: rows[i][1], kelas: rows[i][2], jenisKelamin: rows[i][3] };
+        break;
+      }
     }
-  }
 
-  if (!siswa) {
-    return jsonResponse({ success: false, code: 'NOT_FOUND', message: 'NIS ' + nis + ' tidak ditemukan atau sudah tidak aktif.' });
-  }
-
-  const sheetAbsen = getSheet(SHEET_ABSEN_SISWA);
-  const absenRows  = sheetAbsen.getDataRange().getValues();
-  for (let i = 1; i < absenRows.length; i++) {
-    if (String(absenRows[i][2]) === String(nis) && absenRows[i][1] === tanggal) {
-      return jsonResponse({
-        success: false, code: 'DUPLICATE',
-        message: siswa.nama + ' sudah tercatat hadir pukul ' + absenRows[i][5],
-        siswa
-      });
+    if (!siswa) {
+      return jsonResponse({ success: false, code: 'NOT_FOUND', message: 'NIS ' + nis + ' tidak ditemukan atau sudah tidak aktif.' });
     }
+
+    const sheetAbsen = getSheet(SHEET_ABSEN_SISWA);
+    const absenRows  = sheetAbsen.getDataRange().getValues();
+    for (let i = 1; i < absenRows.length; i++) {
+      if (String(absenRows[i][2]) === String(nis) && absenRows[i][1] === tanggal) {
+        return jsonResponse({
+          success: false, code: 'DUPLICATE',
+          message: siswa.nama + ' sudah tercatat hadir pukul ' + absenRows[i][5],
+          siswa
+        });
+      }
+    }
+
+    const jamMasuk  = timeToMinutes(config['JAM_MASUK_SISWA'] || '06:40');
+    const toleransi = parseInt(config['TOLERANSI_SISWA'] || '10');
+    const status    = jamMenit <= (jamMasuk + toleransi) ? 'HADIR' : 'TERLAMBAT';
+
+    const id = 'S' + new Date().getTime();
+    sheetAbsen.appendRow([id, tanggal, siswa.nis, siswa.nama, siswa.kelas, jamStr, status, '', reqData.scannedBy || 'Scanner']);
+
+    return jsonResponse({ success: true, type: 'siswa', siswa, status, jam: jamStr, tanggal });
+  } finally {
+    lock.releaseLock();
   }
-
-  const jamMasuk  = timeToMinutes(config['JAM_MASUK_SISWA'] || '06:40');
-  const toleransi = parseInt(config['TOLERANSI_SISWA'] || '10');
-  const status    = jamMenit <= (jamMasuk + toleransi) ? 'HADIR' : 'TERLAMBAT';
-
-  const id = 'S' + new Date().getTime();
-  sheetAbsen.appendRow([id, tanggal, siswa.nis, siswa.nama, siswa.kelas, jamStr, status, '', reqData.scannedBy || 'Scanner']);
-
-  return jsonResponse({ success: true, type: 'siswa', siswa, status, jam: jamStr, tanggal });
 }
 
 function _absenGuru(qrCode, tanggal, jamMenit, jamStr, config, reqData) {
-  const nig       = qrCode.replace('MTS-G-', '').replace('MTS-TU-', '');
-  const sheetGuru = getSheet(SHEET_GURU);
-  const rows      = sheetGuru.getDataRange().getValues();
-  let guru        = null;
+  // [BUG-02] LockService mencegah race condition jika 2 request datang bersamaan
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch(e) {
+    return jsonResponse({ success: false, message: 'Server sibuk, coba lagi dalam beberapa detik.' });
+  }
+  try {
+    const nig       = qrCode.replace('MTS-G-', '').replace('MTS-TU-', '');
+    const sheetGuru = getSheet(SHEET_GURU);
+    const rows      = sheetGuru.getDataRange().getValues();
+    let guru        = null;
 
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(nig)) {
-      guru = { nig: rows[i][0], nama: rows[i][1], jabatan: rows[i][2], mapel: rows[i][3], tipe: rows[i][5] };
-      break;
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) === String(nig)) {
+        guru = { nig: rows[i][0], nama: rows[i][1], jabatan: rows[i][2], mapel: rows[i][3], tipe: rows[i][5] };
+        break;
+      }
     }
-  }
 
-  if (!guru) {
-    return jsonResponse({ success: false, code: 'NOT_FOUND', message: 'NIG ' + nig + ' tidak ditemukan.' });
-  }
-
-  const sheetAbsen = getSheet(SHEET_ABSEN_GURU);
-  const absenRows  = sheetAbsen.getDataRange().getValues();
-
-  let existingRowIdx = -1;
-  let existingData   = null;
-  for (let i = 1; i < absenRows.length; i++) {
-    if (String(absenRows[i][2]) === String(nig) && absenRows[i][1] === tanggal) {
-      existingRowIdx = i + 1;
-      existingData   = absenRows[i];
-      break;
+    if (!guru) {
+      return jsonResponse({ success: false, code: 'NOT_FOUND', message: 'NIG ' + nig + ' tidak ditemukan.' });
     }
-  }
 
-  if (existingRowIdx > 0) {
-    if (existingData[6] && existingData[6] !== '') {
-      return jsonResponse({
-        success: false, code: 'DUPLICATE',
-        message: guru.nama + ' sudah tercatat masuk ' + existingData[4] + ' dan pulang ' + existingData[6],
-        guru
-      });
+    const sheetAbsen = getSheet(SHEET_ABSEN_GURU);
+    const absenRows  = sheetAbsen.getDataRange().getValues();
+
+    let existingRowIdx = -1;
+    let existingData   = null;
+    for (let i = 1; i < absenRows.length; i++) {
+      if (String(absenRows[i][2]) === String(nig) && absenRows[i][1] === tanggal) {
+        existingRowIdx = i + 1;
+        existingData   = absenRows[i];
+        break;
+      }
     }
-    const jamPulang    = timeToMinutes(config['JAM_PULANG_GURU'] || '15:30');
-    const statusPulang = jamMenit >= jamPulang ? 'TEPAT_WAKTU' : 'PULANG_AWAL';
-    sheetAbsen.getRange(existingRowIdx, 7).setValue(jamStr);
-    sheetAbsen.getRange(existingRowIdx, 8).setValue(statusPulang);
-    return jsonResponse({ success: true, type: 'guru_pulang', guru, status: statusPulang, jam: jamStr, tanggal });
+
+    if (existingRowIdx > 0) {
+      if (existingData[6] && existingData[6] !== '') {
+        return jsonResponse({
+          success: false, code: 'DUPLICATE',
+          message: guru.nama + ' sudah tercatat masuk ' + existingData[4] + ' dan pulang ' + existingData[6],
+          guru
+        });
+      }
+      // [MED-04] Validasi waktu minimum kerja — guru tidak bisa pulang dalam 4 jam pertama
+      const jamMasukMenit    = timeToMinutes(String(existingData[4]).substring(0, 5));
+      const MINIMUM_KERJA    = 4 * 60; // 4 jam dalam menit
+      if ((jamMenit - jamMasukMenit) < MINIMUM_KERJA) {
+        const minJam = Math.floor((jamMasukMenit + MINIMUM_KERJA) / 60);
+        const minMnt = (jamMasukMenit + MINIMUM_KERJA) % 60;
+        const pulangMinStr = String(minJam).padStart(2, '0') + ':' + String(minMnt).padStart(2, '0');
+        return jsonResponse({
+          success: false, code: 'TOO_EARLY',
+          message: guru.nama + ' baru masuk ' + existingData[4] + '. Pulang minimal pukul ' + pulangMinStr + '.',
+          guru
+        });
+      }
+      const jamPulang    = timeToMinutes(config['JAM_PULANG_GURU'] || '15:30');
+      const statusPulang = jamMenit >= jamPulang ? 'TEPAT_WAKTU' : 'PULANG_AWAL';
+      sheetAbsen.getRange(existingRowIdx, 7).setValue(jamStr);
+      sheetAbsen.getRange(existingRowIdx, 8).setValue(statusPulang);
+      return jsonResponse({ success: true, type: 'guru_pulang', guru, status: statusPulang, jam: jamStr, tanggal });
+    }
+
+    const jamMasuk  = timeToMinutes(config['JAM_MASUK_GURU'] || '06:30');
+    const toleransi = parseInt(config['TOLERANSI_GURU'] || '15');
+    const status    = jamMenit <= (jamMasuk + toleransi) ? 'HADIR' : 'TERLAMBAT';
+
+    const id = 'G' + new Date().getTime();
+    sheetAbsen.appendRow([id, tanggal, guru.nig, guru.nama, jamStr, status, '', '', '']);
+
+    return jsonResponse({ success: true, type: 'guru_masuk', guru, status, jam: jamStr, tanggal });
+  } finally {
+    lock.releaseLock();
   }
-
-  const jamMasuk  = timeToMinutes(config['JAM_MASUK_GURU'] || '06:30');
-  const toleransi = parseInt(config['TOLERANSI_GURU'] || '15');
-  const status    = jamMenit <= (jamMasuk + toleransi) ? 'HADIR' : 'TERLAMBAT';
-
-  const id = 'G' + new Date().getTime();
-  sheetAbsen.appendRow([id, tanggal, guru.nig, guru.nama, jamStr, status, '', '', '']);
-
-  return jsonResponse({ success: true, type: 'guru_masuk', guru, status, jam: jamStr, tanggal });
 }
 
 // ── INPUT MANUAL (BUGFIX + BARU) ──────────────────────────────
@@ -734,8 +785,13 @@ function getStats(params) {
     if (rowsSiswaAll[i][0] && rowsSiswaAll[i][6] === 'AKTIF') totalSiswa++;
   }
 
+  // [MED-03] Hitung total guru yang aktif (ada NIG), bukan sekadar jumlah baris
   const sheetGuruAll = getSheet(SHEET_GURU);
-  const totalGuru    = Math.max(0, sheetGuruAll.getLastRow() - 1);
+  const rowsGuruAll  = sheetGuruAll.getDataRange().getValues();
+  let totalGuru = 0;
+  for (let i = 1; i < rowsGuruAll.length; i++) {
+    if (rowsGuruAll[i][0]) totalGuru++;
+  }
 
   const rowsS = getSheet(SHEET_ABSEN_SISWA).getDataRange().getValues();
   let hadirS = 0, terlambatS = 0, izinS = 0, sakitS = 0, alpaS = 0;
@@ -1047,40 +1103,66 @@ function deleteTeacher(data) {
 
 function importStudents(data) {
   const students = data.students || [];
+
+  // [BUG-08] Validasi DULU sebelum menghapus data apapun
+  if (!students || students.length === 0) {
+    return jsonResponse({ success: false, message: 'Data import kosong. Tidak ada perubahan.' });
+  }
+  const validStudents = students.filter(s => s.nis && s.nama);
+  if (validStudents.length === 0) {
+    return jsonResponse({ success: false, message: 'Tidak ada data valid (NIS dan Nama wajib ada). Import dibatalkan.' });
+  }
+  if (validStudents.length < students.length * 0.5) {
+    return jsonResponse({ success: false,
+      message: 'Terlalu banyak data tidak valid (' + (students.length - validStudents.length) + ' baris kosong). Periksa format file Excel.' });
+  }
+
   const sheet    = getSheet(SHEET_SISWA);
   const lastRow  = sheet.getLastRow();
   const existingCount = lastRow > 1 ? lastRow - 1 : 0;
 
+  // Baru hapus setelah semua validasi lolos
   if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
 
-  if (students.length > 0) {
-    const rows = students.map(s => [
-      s.nis, s.nama, s.kelas, s.jenisKelamin || '', s.namaOrtu || '', s.noHpOrtu || '', 'AKTIF'
-    ]);
-    sheet.getRange(2, 1, rows.length, 7).setNumberFormat("@").setValues(rows);
-  }
+  const rows = validStudents.map(s => [
+    s.nis, s.nama, s.kelas, s.jenisKelamin || '', s.namaOrtu || '', s.noHpOrtu || '', 'AKTIF'
+  ]);
+  sheet.getRange(2, 1, rows.length, 7).setNumberFormat("@").setValues(rows);
 
-  _addAuditLog('IMPORT_SISWA', 'ALL', existingCount + ' records', students.length + ' records', data._role, data._role);
-  return jsonResponse({ success: true, message: students.length + ' siswa berhasil diimport. Data lama (' + existingCount + ' siswa) telah diganti.' });
+  _addAuditLog('IMPORT_SISWA', 'ALL', existingCount + ' records', validStudents.length + ' records', data._role, data._role);
+  return jsonResponse({ success: true, message: validStudents.length + ' siswa berhasil diimport. Data lama (' + existingCount + ' siswa) telah diganti.' });
 }
 
 function importTeachers(data) {
   const teachers = data.teachers || [];
+
+  // [BUG-08] Validasi DULU sebelum menghapus data apapun
+  if (!teachers || teachers.length === 0) {
+    return jsonResponse({ success: false, message: 'Data import kosong. Tidak ada perubahan.' });
+  }
+  const validTeachers = teachers.filter(t => t.nig && t.nama);
+  if (validTeachers.length === 0) {
+    return jsonResponse({ success: false, message: 'Tidak ada data valid (NIG dan Nama wajib ada). Import dibatalkan.' });
+  }
+  if (validTeachers.length < teachers.length * 0.5) {
+    return jsonResponse({ success: false,
+      message: 'Terlalu banyak data tidak valid (' + (teachers.length - validTeachers.length) + ' baris kosong). Periksa format file Excel.' });
+  }
+
   const sheet    = getSheet(SHEET_GURU);
   const lastRow  = sheet.getLastRow();
   const existingCount = lastRow > 1 ? lastRow - 1 : 0;
 
+  // Baru hapus setelah semua validasi lolos
   if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
 
-  if (teachers.length > 0) {
-    const rows = teachers.map(t => [
-      t.nig, t.nama, t.jabatan || '', t.mapel || '', t.jenisKelamin || '', t.tipe || 'Guru'
-    ]);
-    sheet.getRange(2, 1, rows.length, 6).setNumberFormat("@").setValues(rows);
-  }
+  const rows = validTeachers.map(t => [
+    t.nig, t.nama, t.jabatan || '', t.mapel || '', t.jenisKelamin || '', t.tipe || 'Guru'
+  ]);
+  sheet.getRange(2, 1, rows.length, 6).setNumberFormat("@").setValues(rows);
 
-  _addAuditLog('IMPORT_GURU', 'ALL', existingCount + ' records', teachers.length + ' records', data._role, data._role);
-  return jsonResponse({ success: true, message: teachers.length + ' guru/tendik berhasil diimport.' });
+  _addAuditLog('IMPORT_GURU', 'ALL', existingCount + ' records', validTeachers.length + ' records', data._role, data._role);
+  return jsonResponse({ success: true, message: validTeachers.length + ' guru/tendik berhasil diimport.' });
 }
 
 // ── SETUP AWAL ────────────────────────────────────────────────

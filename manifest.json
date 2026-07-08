@@ -1,9 +1,10 @@
 {
   "name": "Dashboard Admin — Presensi MTS Al Huda",
-  "short_name": "Presensi MTS",
+  "short_name": "Dashboard MTS",
+  "id": "dashboard-mts-alhuda",
   "description": "Dashboard manajemen presensi siswa dan guru MTS Al Huda Putri Malang",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/dashboard/index.html",
+  "scope": "/dashboard/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0a1628",

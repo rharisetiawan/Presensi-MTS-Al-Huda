@@ -573,7 +573,7 @@
 let deviceToken     = localStorage.getItem('mts_device_token') || null;
 let isScanning      = false;
 let isCooldown      = false;
-let scanCount       = { hadir: 0, terlambat: 0, total: 0 };
+let scanCount       = { hadir: 0, terlambat: 0, pulang: 0, total: 0 }; // [MED-02] tambah counter pulang
 let offlineQueue    = JSON.parse(localStorage.getItem('mts_offline_queue') || '[]');
 let resultTimer     = null;
 let html5QrCode     = null;
@@ -774,12 +774,17 @@ async function onQrSuccess(qrCode) {
   isCooldown = true;
   vibrate();
 
+  // [BUG-03] Safety backstop: pastikan isCooldown selalu di-reset meski ada error tak terduga
+  setTimeout(() => { isCooldown = false; }, COOLDOWN + 1500);
+
   try {
-    const payload = { action: 'scan', qrCode, token: deviceToken };
+    // [BUG-04] Catat waktu scan di sisi client — bukan waktu sync — agar offline scan akurat
+    const scanTimestamp = new Date().toISOString();
+    const payload = { action: 'scan', qrCode, token: deviceToken, clientTimestamp: scanTimestamp };
 
     if (!navigator.onLine) {
-      // Simpan ke antrian offline
-      offlineQueue.push({ ...payload, queuedAt: new Date().toISOString() });
+      // Simpan ke antrian offline — payload sudah berisi clientTimestamp
+      offlineQueue.push({ ...payload, queuedAt: scanTimestamp });
       saveOfflineQueue();
       showResult('duplicate', '📵', 'Offline', 'Data disimpan, akan sync saat online', qrCode, '');
       return;
@@ -788,14 +793,16 @@ async function onQrSuccess(qrCode) {
     const res = await apiPost(payload);
 
     if (res.success) {
-      const isSiswa    = res.type === 'siswa';
-      const isGurMasuk = res.type === 'guru_masuk';
+      const isSiswa     = res.type === 'siswa';
+      const isGurMasuk  = res.type === 'guru_masuk';
       const isGurPulang = res.type === 'guru_pulang';
-      const isHadir    = res.status === 'HADIR' || res.status === 'TEPAT_WAKTU';
+      const isHadir     = res.status === 'HADIR' || res.status === 'TEPAT_WAKTU';
 
+      // [MED-02] Counter terpisah: hadir / terlambat / pulang
       scanCount.total++;
-      if (isHadir)            scanCount.hadir++;
-      else if (!isGurPulang)  scanCount.terlambat++;
+      if (isGurPulang)  scanCount.pulang++;
+      else if (isHadir) scanCount.hadir++;
+      else              scanCount.terlambat++;
       updateCountDisplay();
 
       if (isSiswa) {
@@ -828,8 +835,8 @@ async function onQrSuccess(qrCode) {
     }
 
   } catch(err) {
-    // Network error → offline queue
-    offlineQueue.push({ action: 'scan', qrCode, token: deviceToken, queuedAt: new Date().toISOString() });
+    // Network error → simpan ke offline queue dengan clientTimestamp
+    offlineQueue.push({ action: 'scan', qrCode, token: deviceToken, clientTimestamp: new Date().toISOString(), queuedAt: new Date().toISOString() });
     saveOfflineQueue();
     showResult('duplicate', '📵', 'Offline', 'Data disimpan sementara', '', '');
   }
@@ -899,31 +906,45 @@ function dismissResult() {
 // ══════════════════════════════════════════════════════════
 // AUDIO FEEDBACK
 // ══════════════════════════════════════════════════════════
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// [BUG-05] Lazy initialization — mencegah crash di iOS Safari
+// AudioContext wajib dibuat setelah ada user gesture (tap/sentuh)
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) { return null; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
 
 function playBeep(type = 'success') {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
   try {
-    const osc   = audioCtx.createOscillator();
-    const gain  = audioCtx.createGain();
+    const osc   = ctx.createOscillator();
+    const gain  = ctx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(ctx.destination);
 
     if (type === 'success') {
       osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(); osc.stop(ctx.currentTime + 0.3);
     } else if (type === 'warning') {
       osc.frequency.value = 600;
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(); osc.stop(ctx.currentTime + 0.5);
     } else {
       osc.frequency.value = 300;
       osc.type = 'sawtooth';
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
     }
   } catch(e) {}
 }
