@@ -1,11 +1,8 @@
-const CACHE_NAME = 'mts-dashboard-v2';
-const ASSETS = [
-  './',
-  './index.html',
-  '../assets/js/config.js',
-  '../assets/icons/logo-mts.png',
-  '../assets/icons/favicon.ico',
-];
+// Service Worker — Landing Page Root — MTS Al Huda Putri
+// [FIX-04] Root SW hanya handle halaman landing saja, scope terbatas
+// Dashboard dan Scanner punya SW mereka sendiri di subdirektori masing-masing
+const CACHE_NAME = 'mts-root-v1';
+const ASSETS = ['./index.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -23,12 +20,12 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Network-first strategy (always try network, fallback to cache)
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  // Skip Google APIs and CDN requests
-  if (e.request.url.includes('googleapis') || e.request.url.includes('jsdelivr') || e.request.url.includes('script.google.com')) return;
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  // Hanya handle request untuk index.html di root saja
+  if (e.request.url.endsWith('/') || e.request.url.endsWith('/index.html')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('./index.html'))
+    );
+  }
+  // Biarkan request ke /dashboard/ dan /scanner/ ditangani oleh SW mereka
 });
