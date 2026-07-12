@@ -2268,12 +2268,12 @@ async function doInputManualSiswa(tanggal) {
   const status = document.getElementById('md-status-manual').value;
   const ket    = document.getElementById('md-ket-manual').value;
   try {
-    // Gunakan action 'add_attendance' yang benar (bukan update_attendance)
     const res = await apiPost({ action: 'add_attendance', tanggal, nis, nama, kelas, status, keterangan: ket });
     if (res.success) {
       closeModal();
       showToast('✅ ' + (res.message || 'Absensi tersimpan'), 'success');
-      renderAbsenSiswa(tanggal);
+      // [FIX-02] Delay 800ms agar Google Sheets selesai commit sebelum fetch ulang
+      setTimeout(() => renderAbsenSiswa(tanggal), 800);
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal menyimpan', 'error'); }
 }
@@ -2303,12 +2303,12 @@ async function doInputForSiswa(tanggal, nis, nama, kelas) {
   const status = document.getElementById('md-status-for').value;
   const ket    = document.getElementById('md-ket-for').value;
   try {
-    // BUGFIX: gunakan action 'add_attendance' yang membuat record baru jika belum ada
     const res = await apiPost({ action: 'add_attendance', tanggal, nis, nama, kelas, status, keterangan: ket });
     if (res.success) {
       closeModal();
       showToast('✅ Absensi tersimpan', 'success');
-      renderAbsenSiswa(tanggal);
+      // [FIX-02] Delay 800ms agar Google Sheets selesai commit sebelum fetch ulang
+      setTimeout(() => renderAbsenSiswa(tanggal), 800);
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal menyimpan', 'error'); }
 }
@@ -2319,6 +2319,7 @@ async function inputAlpaAll(tanggal, kelas) {
   if (belum.length === 0) { showToast('Semua siswa sudah absen', 'success'); return; }
   if (!confirm(`Tandai ${belum.length} siswa sebagai ALPA untuk tanggal ${tanggal}?`)) return;
 
+  showToast('⏳ Menyimpan data alpa...');
   let success = 0;
   for (const s of belum) {
     try {
@@ -2327,7 +2328,8 @@ async function inputAlpaAll(tanggal, kelas) {
     } catch {}
   }
   showToast(`✅ ${success} siswa ditandai ALPA`, 'success');
-  renderAbsenSiswa(tanggal, kelas);
+  // [FIX-02] Delay 800ms agar Google Sheets selesai commit semua baris
+  setTimeout(() => renderAbsenSiswa(tanggal, kelas), 800);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2369,7 +2371,8 @@ async function doInputManualGuru(tanggal) {
     if (res.success) {
       closeModal();
       showToast('✅ ' + (res.message || 'Absensi guru tersimpan'), 'success');
-      renderAbsenGuru(tanggal);
+      // [FIX-02] Delay 800ms agar Google Sheets selesai commit sebelum fetch ulang
+      setTimeout(() => renderAbsenGuru(tanggal), 800);
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal menyimpan', 'error'); }
 }
@@ -2438,7 +2441,13 @@ async function doEditAbsen(id, tipe) {
     if (res.success) {
       closeModal();
       showToast('✅ Data absensi diperbarui', 'success');
-      tipe === 'siswa' ? renderAbsenSiswa() : renderAbsenGuru();
+      // [FIX-02] Delay 800ms + [FIX-06] refresh global todayAbsence agar Beranda ikut update
+      setTimeout(async () => {
+        if (tipe === 'siswa') { renderAbsenSiswa(); }
+        else { renderAbsenGuru(); }
+        const fresh = await apiGet('get_attendance', { tanggal: todayStr() });
+        todayAbsence = { siswa: fresh.siswa || [], guru: fresh.guru || [] };
+      }, 800);
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal', 'error'); }
 }
@@ -2470,7 +2479,12 @@ async function doEditAbsenGuru(id) {
     if (res.success) {
       closeModal();
       showToast('✅ Data absensi guru diperbarui', 'success');
-      renderAbsenGuru();
+      // [FIX-02] Delay 800ms + [FIX-06] refresh global todayAbsence agar Beranda ikut update
+      setTimeout(async () => {
+        renderAbsenGuru();
+        const fresh = await apiGet('get_attendance', { tanggal: todayStr() });
+        todayAbsence = { siswa: fresh.siswa || [], guru: fresh.guru || [] };
+      }, 800);
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal', 'error'); }
 }
@@ -2825,8 +2839,16 @@ function statMiniCard(icon, label, value, color) {
 
 // ── API HELPERS ──
 async function apiGet(action, params = {}) {
-  const qs  = new URLSearchParams({ action, sessionToken: SESSION_TOKEN || '', ...params }).toString();
-  const res = await fetch(`${API}?${qs}`, { redirect: 'follow' });
+  const qs  = new URLSearchParams({
+    action,
+    sessionToken: SESSION_TOKEN || '',
+    ...params,
+    _t: Date.now()  // [FIX-CACHE] Cache buster: URL unik tiap request, bypass CDN & browser cache
+  }).toString();
+  const res = await fetch(`${API}?${qs}`, {
+    redirect: 'follow',
+    cache: 'no-store'  // [FIX-CACHE] Nonaktifkan browser HTTP cache
+  });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
   const json = JSON.parse(text);

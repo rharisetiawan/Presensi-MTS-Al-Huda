@@ -111,6 +111,7 @@ function doGet(e) {
       case 'get_absen_range':   return getAbsenRange(e.parameter);
       case 'get_hari_libur':    return getHariLibur();
       case 'get_audit_log':     return getAuditLog(e.parameter);
+      case 'get_attendance_summary': return getAttendanceSummary(e.parameter); // [FIX-COUNTER] Summary harian untuk scanner
       default: return jsonResponse({ success: false, message: 'Action tidak dikenal: ' + action });
     }
   } catch (err) {
@@ -633,6 +634,7 @@ function addAttendance(data) {
       const oldStatus = absenRows[i][6];
       if (data.status)                 sheetAbsen.getRange(i + 1, 7).setValue(data.status);
       if (data.keterangan !== undefined) sheetAbsen.getRange(i + 1, 8).setValue(data.keterangan);
+      SpreadsheetApp.flush(); // [FIX-02] Paksa commit data sebelum return
       _addAuditLog('UPDATE_ABSEN_SISWA', nis + '@' + tanggal, oldStatus, data.status, data._role, data._role);
       return jsonResponse({ success: true, updated: true, message: 'Absensi siswa berhasil diperbarui.' });
     }
@@ -662,6 +664,7 @@ function addAttendance(data) {
     id, tanggal, siswa.nis, siswa.nama, siswa.kelas,
     jam, data.status || 'HADIR', data.keterangan || '', (data._role || 'TU') + ' (Manual)'
   ]);
+  SpreadsheetApp.flush(); // [FIX-02] Paksa commit data sebelum return agar frontend dapat data terbaru
   _addAuditLog('ADD_ABSEN_SISWA_MANUAL', nis + '@' + tanggal, 'Belum Absen', data.status, data._role, data._role);
   return jsonResponse({ success: true, created: true, message: 'Absensi manual siswa berhasil disimpan.' });
 }
@@ -679,6 +682,7 @@ function addAttendanceGuru(data) {
       const oldStatus = absenRows[i][5];
       if (data.statusMasuk)            sheetAbsen.getRange(i + 1, 6).setValue(data.statusMasuk);
       if (data.keterangan !== undefined) sheetAbsen.getRange(i + 1, 9).setValue(data.keterangan);
+      SpreadsheetApp.flush(); // [FIX-02] Paksa commit data sebelum return
       _addAuditLog('UPDATE_ABSEN_GURU', nig + '@' + tanggal, oldStatus, data.statusMasuk, data._role, data._role);
       return jsonResponse({ success: true, updated: true, message: 'Absensi guru berhasil diperbarui.' });
     }
@@ -704,6 +708,7 @@ function addAttendanceGuru(data) {
     id, tanggal, guru.nig, guru.nama,
     jam, data.statusMasuk || 'HADIR', '', '', data.keterangan || ''
   ]);
+  SpreadsheetApp.flush(); // [FIX-02] Paksa commit data sebelum return agar frontend dapat data terbaru
   _addAuditLog('ADD_ABSEN_GURU_MANUAL', nig + '@' + tanggal, 'Belum Absen', data.statusMasuk, data._role, data._role);
   return jsonResponse({ success: true, created: true, message: 'Absensi manual guru berhasil disimpan.' });
 }
@@ -772,6 +777,37 @@ function getAttendance(params) {
   }
 
   return jsonResponse({ success: true, tanggal, siswa: absenSiswa, guru: absenGuru, hariLibur });
+}
+
+// [FIX-COUNTER] Endpoint ringan untuk scanner: hitung jumlah hadir/terlambat/total hari ini
+// Bisa diakses dengan device token saja (tanpa session admin)
+function getAttendanceSummary(params) {
+  const tanggal = params.tanggal || todayJakarta();
+
+  // Validasi device token (tidak wajib — scanner tetap bisa berjalan tanpa ini)
+  const token = params.token || '';
+  // Jika token diberikan tapi tidak valid, tetap lanjut (counter hanya informatif)
+
+  const sheetS  = getSheet(SHEET_ABSEN_SISWA);
+  const rowsS   = sheetS.getDataRange().getValues();
+
+  let hadir = 0, terlambat = 0, izin = 0, sakit = 0, alpa = 0;
+  for (let i = 1; i < rowsS.length; i++) {
+    if (rowsS[i][1] !== tanggal) continue;
+    const status = String(rowsS[i][6] || '').toUpperCase();
+    if (status === 'HADIR' || status === 'TEPAT_WAKTU') hadir++;
+    else if (status === 'TERLAMBAT') terlambat++;
+    else if (status === 'IZIN') izin++;
+    else if (status === 'SAKIT') sakit++;
+    else if (status === 'ALPA') alpa++;
+  }
+
+  const total = hadir + terlambat + izin + sakit + alpa;
+  return jsonResponse({
+    success: true,
+    tanggal,
+    summary: { hadir, terlambat, izin, sakit, alpa, total }
+  });
 }
 
 function getStats(params) {
@@ -979,6 +1015,7 @@ function updateAttendance(data) {
         if (data.status)                 sheet.getRange(i + 1, 7).setValue(data.status);
         if (data.keterangan !== undefined) sheet.getRange(i + 1, 8).setValue(data.keterangan);
       }
+      SpreadsheetApp.flush(); // [FIX-02] Paksa commit data sebelum return
       _addAuditLog('UPDATE_ABSEN', rows[i][2] + '@' + rows[i][1], oldStatus, data.status || data.statusMasuk, data._role, data._role);
       return jsonResponse({ success: true, message: 'Data absen berhasil diperbarui.' });
     }

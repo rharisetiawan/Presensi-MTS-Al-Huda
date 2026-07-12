@@ -10,14 +10,9 @@
   <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js" onerror="loadQRFallback()"></script>
   <script>
     function loadQRFallback() {
-      // CDN pertama gagal → coba jsDelivr
       var s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-      s.onerror = function() {
-        // Kedua-duanya gagal → tandai pakai image API
-        window._qrLibFailed = true;
-        console.warn('QR library CDN tidak tersedia. Menggunakan QR image API sebagai fallback.');
-      };
+      s.onerror = function() { window._qrLibFailed = true; };
       document.head.appendChild(s);
     }
   </script>
@@ -31,34 +26,41 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --primary: #10b981; --primary-dk: #059669;
-  --warn: #f59e0b;
-  --bg: #0a1628; --surface: #111f38; --surface2: #1a2e4a;
-  --text: #f1f5f9; --text-muted: #64748b; --border: rgba(255,255,255,0.08);
+  --primary: #10b981; --primary-dk: #059669; --primary-lt: rgba(16,185,129,0.12);
+  --warn: #f59e0b; --info: #3b82f6; --danger: #ef4444;
+  --bg: #0a1628; --surface: #111f38; --surface2: #1a2e4a; --surface3: #213654;
+  --text: #f1f5f9; --text-2: #cbd5e1; --text-muted: #64748b;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+  --radius: 12px;
 }
 body.light-mode {
-  --bg: #f0f4f8; --surface: #ffffff; --surface2: #f1f5f9;
-  --text: #1e293b; --text-muted: #64748b; --border: rgba(0,0,0,0.08);
+  --bg: #f0f4f8; --surface: #ffffff; --surface2: #f1f5f9; --surface3: #e2e8f0;
+  --text: #1e293b; --text-2: #334155; --text-muted: #64748b;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
 }
 body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 .header {
   background: var(--surface); border-bottom: 1px solid var(--border);
   padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
 }
 .header-title { font-size: 18px; font-weight: 800; }
 .header-sub { font-size: 12px; color: var(--text-muted); }
 .back-btn { color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600; }
 
-.container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+.container { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
 
 /* Controls */
 .controls {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; padding: 24px; margin-bottom: 28px;
+  border-radius: var(--radius); padding: 24px; margin-bottom: 24px;
 }
-.controls-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
-.controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.controls-title { font-size: 15px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+@media (max-width: 768px) { .controls-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .controls-grid { grid-template-columns: 1fr; } }
+
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .form-select, .form-input {
@@ -67,136 +69,159 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
   font-size: 14px; font-family: inherit; color: var(--text); outline: none;
   transition: border-color 0.2s;
 }
-.form-select:focus, .form-input:focus { border-color: var(--primary); }
-.controls-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.form-select:focus, .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-lt); }
+.controls-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; align-items: center; }
+
+/* ── FILTER SEARCH BAR (BARU) ── */
+.search-bar-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 22px; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.search-input-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-muted); pointer-events: none; }
+#search-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px 10px 36px;
+  font-size: 14px; font-family: inherit; color: var(--text); outline: none;
+  transition: border-color 0.2s;
+}
+#search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-lt); }
+#search-input::placeholder { color: var(--text-muted); }
+.search-count {
+  font-size: 13px; color: var(--text-muted); white-space: nowrap;
+  min-width: 100px; text-align: right;
+}
+.search-bar-hidden { display: none; }
+
+/* Btn */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 18px; border-radius: 10px;
   font-size: 14px; font-weight: 700; font-family: inherit;
-  border: none; cursor: pointer; transition: all 0.15s;
+  border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
 .btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-dk); }
+.btn-primary:hover { background: var(--primary-dk); transform: translateY(-1px); }
 .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: #213654; }
+.btn-secondary:hover { background: var(--surface3); }
+.btn-info { background: #1d4ed8; color: #fff; }
+.btn-info:hover { background: #1e40af; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-xs { padding: 4px 9px; font-size: 11px; border-radius: 6px; gap: 4px; }
+
+/* Stats bar */
+.stats-bar {
+  display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.stat-pill {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 100px; padding: 5px 14px; font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+.stat-pill .num { color: var(--primary); font-weight: 800; }
+.stat-pill.selected-pill { background: var(--primary-lt); border-color: rgba(16,185,129,0.4); color: var(--primary); }
 
 /* Cards grid */
-.cards-label { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
 .cards-grid {
   display: grid; gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
 }
+.card-wrap-outer {
+  position: relative;
+  transition: transform 0.2s;
+}
+.card-wrap-outer:hover { transform: translateY(-3px); }
 
-/* QR Card */
-.qr-card-wrap {
-  cursor: pointer; transition: transform 0.2s;
+/* Select checkbox overlay */
+.card-select-overlay {
+  position: absolute; top: 6px; right: 6px; z-index: 5;
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--surface2); border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s;
 }
-.qr-card-wrap:hover { transform: translateY(-3px); }
+.card-select-overlay.checked {
+  background: var(--primary); border-color: var(--primary);
+}
+.card-select-overlay.checked::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 800; }
+
+/* Card action bar (appears on hover) */
+.card-actions {
+  display: flex; gap: 6px; margin-top: 8px; justify-content: center;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.card-wrap-outer:hover .card-actions { opacity: 1; transform: translateY(0); }
+
+/* Hidden cards during search */
+.card-wrap-outer.hidden { display: none; }
+
+/* Print only selected */
+.card-wrap-outer.print-exclude { display: none !important; }
 
 /* Print styles */
 @media print {
   body { background: white !important; }
-  .header, .controls, .page-title, .cards-label { display: none !important; }
+  .header, .controls, .search-bar-wrap, .stats-bar, .page-title,
+  .card-actions, .card-select-overlay, #toast, .qr-footer { display: none !important; }
   .cards-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px !important;
     padding: 4px !important;
   }
-  .qr-card-wrap { page-break-inside: avoid; }
+  .card-wrap-outer { page-break-inside: avoid; }
   .card-preview { box-shadow: none !important; }
+  .card-wrap-outer.print-exclude { display: none !important; }
 }
 
 /* ID Card design */
 .card-preview {
-  width: 190px; height: 120px; /* CR-80 proporsi 3:2 */
-  border-radius: 10px;
-  padding: 10px 12px;
+  width: 100%; max-width: 210px; height: 133px; /* CR-80 proporsi 85.6×54mm */
+  border-radius: 10px; padding: 10px 12px;
   display: flex; flex-direction: column;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  position: relative; overflow: hidden;
-  user-select: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  position: relative; overflow: hidden; user-select: none;
+  cursor: pointer;
 }
-.card-preview.theme-green {
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
-  border: 1px solid rgba(16,185,129,0.3);
-}
-.card-preview.theme-blue {
-  background: linear-gradient(135deg, #1e3a5f 0%, #1e4080 50%, #1a56db 100%);
-  border: 1px solid rgba(59,130,246,0.3);
-}
-.card-preview.theme-purple {
-  background: linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #6d28d9 100%);
-  border: 1px solid rgba(139,92,246,0.3);
-}
-.card-preview.theme-gold {
-  background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%);
-  border: 1px solid rgba(245,158,11,0.3);
-}
+.card-preview.theme-green { background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%); border: 1px solid rgba(16,185,129,0.3); }
+.card-preview.theme-blue  { background: linear-gradient(135deg, #1e3a5f 0%, #1e4080 50%, #1a56db 100%); border: 1px solid rgba(59,130,246,0.3); }
+.card-preview.theme-purple{ background: linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #6d28d9 100%); border: 1px solid rgba(139,92,246,0.3); }
+.card-preview.theme-gold  { background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%); border: 1px solid rgba(245,158,11,0.3); }
 
-.card-header-row {
-  display: flex; align-items: center; gap: 6px;
-  margin-bottom: 6px;
-}
+.card-header-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .card-school-icon { font-size: 14px; }
 .card-school-info { flex: 1; min-width: 0; }
-.card-school-name {
-  font-size: 7px; font-weight: 800; color: rgba(255,255,255,0.95);
-  line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.card-school-name { font-size: 7px; font-weight: 800; color: rgba(255,255,255,0.95); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-year { font-size: 6px; color: rgba(255,255,255,0.6); }
-
 .card-body-row { display: flex; gap: 8px; flex: 1; align-items: center; }
 .card-qr { flex-shrink: 0; }
 .card-qr canvas { border-radius: 4px; display: block; }
 .card-info { flex: 1; min-width: 0; }
-.card-type-label {
-  font-size: 6px; font-weight: 700; color: rgba(255,255,255,0.6);
-  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px;
-}
-.card-name {
-  font-size: 10px; font-weight: 800; color: #fff;
-  line-height: 1.2; margin-bottom: 4px;
-  overflow: hidden; display: -webkit-box;
-  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-}
-.card-id {
-  font-size: 7.5px; color: rgba(255,255,255,0.75);
-  font-family: monospace; font-weight: 600; letter-spacing: 0.05em;
-}
-.card-class {
-  font-size: 7px; color: rgba(255,255,255,0.6); margin-top: 2px;
-}
-
-/* Decorative circles */
-.card-deco {
-  position: absolute; border-radius: 50%;
-  background: rgba(255,255,255,0.04);
-  pointer-events: none;
-}
+.card-type-label { font-size: 6px; font-weight: 700; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+.card-name { font-size: 10px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 4px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.card-id { font-size: 7.5px; color: rgba(255,255,255,0.75); font-family: monospace; font-weight: 600; letter-spacing: 0.05em; }
+.card-class { font-size: 7px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.card-deco { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.04); pointer-events: none; }
 .card-deco-1 { width: 60px; height: 60px; top: -20px; right: -20px; }
 .card-deco-2 { width: 40px; height: 40px; bottom: -15px; left: 40px; }
-
-/* Stripe at bottom */
-.card-stripe {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1));
-}
+.card-stripe { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1)); }
 
 /* Loader */
-.loader { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-muted); gap: 10px; }
-.spinner { width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--surface2); border-top-color: var(--primary); animation: spin 0.7s linear infinite; }
+.loader { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-muted); gap: 10px; flex-direction: column; }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--surface2); border-top-color: var(--primary); animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Toast */
 #toast {
   position: fixed; bottom: 24px; right: 24px;
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 20px;
-  font-size: 13px; font-weight: 600;
-  opacity: 0; pointer-events: none;
-  transition: all 0.3s; transform: translateY(20px); z-index: 999;
+  border-radius: 10px; padding: 12px 20px; font-size: 13px; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: all 0.3s; transform: translateY(20px); z-index: 999;
 }
 #toast.show { opacity: 1; transform: translateY(0); }
 </style>
@@ -216,8 +241,8 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
   .qr-footer{text-align:center;padding:12px;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:8px}
   .qr-footer a{color:#10b981;text-decoration:none;font-weight:600}
   .theme-toggle-qr{background:var(--surface2);border:1px solid var(--border);border-radius:100px;padding:5px 10px;font-size:14px;cursor:pointer;color:var(--text);transition:all 0.2s}
-  body.light-mode .qr-footer{background:#fff}
 </style>
+
 <div class="header">
   <div style="display:flex;align-items:center;gap:10px">
     <img src="../assets/icons/logo-mts.png" alt="Logo" style="width:32px;height:32px;object-fit:contain" />
@@ -233,9 +258,10 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
 </div>
 
 <div class="container">
-  <!-- Controls -->
+
+  <!-- ── Controls Panel ── -->
   <div class="controls">
-    <div class="controls-title">Pengaturan Kartu</div>
+    <div class="controls-title">⚙️ Pengaturan Kartu</div>
     <div class="controls-grid">
       <div class="form-group">
         <label class="form-label">Tipe</label>
@@ -262,58 +288,83 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
       </div>
       <div class="form-group">
         <label class="form-label">Tahun Ajaran</label>
-        <input id="ctrl-ta" class="form-input" type="text" value="${APP_CONFIG.TAHUN_AJARAN||'2026/2027'}" />
+        <input id="ctrl-ta" class="form-input" type="text" value="" />
       </div>
     </div>
     <div class="controls-actions">
       <button class="btn btn-primary" onclick="generateCards()">🔄 Generate Kartu</button>
-      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Semua</button>
+      <button class="btn btn-secondary" id="btn-print-all" onclick="printAll()" style="display:none">🖨️ Print Semua</button>
+      <button class="btn btn-info" id="btn-print-selected" onclick="printSelected()" style="display:none">🖨️ Print Terpilih (<span id="selected-count">0</span>)</button>
+      <button class="btn btn-secondary btn-sm" id="btn-select-all" onclick="selectAll()" style="display:none">☑️ Pilih Semua</button>
+      <button class="btn btn-secondary btn-sm" id="btn-clear-sel" onclick="clearSelection()" style="display:none">✕ Hapus Pilihan</button>
     </div>
   </div>
 
-  <!-- Output -->
-  <div id="output">
-    <div class="loader"><div class="spinner"></div> Klik "Generate Kartu" untuk memulai</div>
+  <!-- ── Search & Filter Bar ── -->
+  <div class="search-bar-wrap search-bar-hidden" id="search-bar">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input id="search-input" type="search" placeholder="Cari nama, NIS, atau kelas…" oninput="filterCards()" autocomplete="off" />
+    </div>
+    <div class="search-count" id="search-count"></div>
   </div>
+
+  <!-- ── Stats Bar ── -->
+  <div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat-pill">Total: <span class="num" id="stat-total">0</span> kartu</div>
+    <div class="stat-pill" id="stat-tampil-pill">Ditampilkan: <span class="num" id="stat-tampil">0</span></div>
+    <div class="stat-pill selected-pill" id="stat-selected-pill" style="display:none">Dipilih: <span class="num" id="stat-selected">0</span></div>
+  </div>
+
+  <!-- ── Output ── -->
+  <div id="output">
+    <div class="loader">
+      <div class="spinner"></div>
+      <span>Klik "Generate Kartu" untuk memulai</span>
+    </div>
+  </div>
+
 </div>
 
 <div id="toast"></div>
+<div class="qr-footer">Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener">weverx.com</a></div>
 
 <script>
 const API = APP_CONFIG.API_URL;
-let currentData = [];
+let currentData    = [];   // semua data dari server
+let selectedCards  = new Set(); // set of idx yang dipilih untuk print
+let totalVisible   = 0;
 
-// ── Init: isi dropdown dan tahun ajaran dari config ──
+// ── Init ──
 (function initQRCard() {
-  // Isi tahun ajaran
   const taInput = document.getElementById('ctrl-ta');
   if (taInput) taInput.value = APP_CONFIG.TAHUN_AJARAN || '2026/2027';
 
-  // Isi dropdown kelas
-  const kelasSel = document.getElementById('ctrl-kelas');
+  const kelasSel  = document.getElementById('ctrl-kelas');
   const kelasList = APP_CONFIG.KELAS_LIST || ['VII', 'VIII', 'IX'];
   kelasList.forEach(k => {
     const opt = document.createElement('option');
-    opt.value = k;
-    opt.textContent = 'Kelas ' + k;
+    opt.value = k; opt.textContent = 'Kelas ' + k;
     kelasSel.appendChild(opt);
   });
+  onTipeChange();
 })();
 
+// ── Fetch data dari server ──
 async function fetchData(tipe) {
   const action = tipe === 'siswa' ? 'get_students' : 'get_teachers';
-  // Ambil session token dari sessionStorage (login dashboard)
   const sessionToken = sessionStorage.getItem('mts_session_token') || '';
-  const res  = await fetch(`${API}?action=${action}&sessionToken=${sessionToken}`, { redirect: 'follow' });
+  const res  = await fetch(`${API}?action=${action}&sessionToken=${sessionToken}&_t=${Date.now()}`, {
+    redirect: 'follow', cache: 'no-store'
+  });
   const text = await res.text();
   try {
     const json = JSON.parse(text);
     if (!json.success && json.code === 'UNAUTHORIZED') {
-      throw new Error('Belum login. Silakan login ke Dashboard dulu, lalu buka Generator QR Card dari Dashboard.');
+      throw new Error('Belum login. Silakan login ke Dashboard dulu, lalu buka Generator QR Card dari sana.');
     }
     return json.data || [];
-  }
-  catch(e) { throw new Error(e.message || 'Gagal ambil data'); }
+  } catch(e) { throw new Error(e.message || 'Gagal ambil data'); }
 }
 
 function onTipeChange() {
@@ -321,146 +372,279 @@ function onTipeChange() {
   document.getElementById('kelas-group').style.display = tipe === 'siswa' ? 'flex' : 'none';
 }
 
+// ── Generate semua kartu ──
 async function generateCards() {
-  const tipe   = document.getElementById('ctrl-tipe').value;
-  const kelas  = document.getElementById('ctrl-kelas').value;
-  const theme  = document.getElementById('ctrl-theme').value;
-  const ta     = document.getElementById('ctrl-ta').value;
+  const tipe  = document.getElementById('ctrl-tipe').value;
+  const kelas = document.getElementById('ctrl-kelas').value;
+  const theme = document.getElementById('ctrl-theme').value;
+  const ta    = document.getElementById('ctrl-ta').value;
 
-  document.getElementById('output').innerHTML = '<div class="loader"><div class="spinner"></div> Memuat data dan membuat kartu...</div>';
+  document.getElementById('output').innerHTML = '<div class="loader"><div class="spinner"></div><span>Memuat data…</span></div>';
+  hideSearchBar(); hideActionBtns(); hideStatsBar();
+  selectedCards.clear(); updateSelectedCount();
 
   try {
     let data = await fetchData(tipe);
     if (kelas && tipe === 'siswa') data = data.filter(s => s.kelas === kelas);
+    // Hanya tampilkan siswa AKTIF
+    if (tipe === 'siswa') data = data.filter(s => !s.status || s.status === 'AKTIF');
 
     if (data.length === 0) {
       document.getElementById('output').innerHTML = '<div class="loader">Tidak ada data ditemukan</div>';
       return;
     }
-
     currentData = data;
 
-    const cardsHtml = data.map((item, idx) => {
-      const isSiswa = tipe === 'siswa';
-      // [BUG-01] Prefix berdasarkan tipe — konsisten dengan routing di backend (prosesAbsen)
-      let qrValue;
-      if (isSiswa) {
-        qrValue = `MTS-S-${item.nis}`;
-      } else {
-        const isTU = item.tipe && (item.tipe.toLowerCase().includes('tu') || item.tipe.toLowerCase().includes('tendik'));
-        qrValue = `${isTU ? 'MTS-TU-' : 'MTS-G-'}${item.nig}`;
-      }
-      const name    = item.nama || '-';
-      const id      = isSiswa ? item.nis : item.nig;
-      const sub     = isSiswa ? `Kelas ${item.kelas}` : (item.jabatan || item.tipe || 'Guru');
-      const typeLabel = isSiswa ? 'KARTU PELAJAR' : 'KARTU TENDIK';
+    // Render kartu
+    const cardsHtml = data.map((item, idx) => cardHtml(item, idx, tipe, theme, ta)).join('');
+    document.getElementById('output').innerHTML = `<div class="cards-grid" id="cards-grid">${cardsHtml}</div>`;
 
-      return `
-      <div class="qr-card-wrap" id="card-${idx}">
-        <div class="card-preview theme-${theme}">
-          <div class="card-deco card-deco-1"></div>
-          <div class="card-deco card-deco-2"></div>
-
-          <div class="card-header-row">
-            <div class="card-school-icon">🕌</div>
-            <div class="card-school-info">
-              <div class="card-school-name">MTS Al Huda Putri Malang</div>
-              <div class="card-year">TA ${ta}</div>
-            </div>
-          </div>
-
-          <div class="card-body-row">
-            <div class="card-qr">
-              <canvas id="qr-${idx}" width="52" height="52"></canvas>
-            </div>
-            <div class="card-info">
-              <div class="card-type-label">${typeLabel}</div>
-              <div class="card-name">${name}</div>
-              <div class="card-id">${id}</div>
-              <div class="card-class">${sub}</div>
-            </div>
-          </div>
-
-          <div class="card-stripe"></div>
-        </div>
-      </div>`;
-    }).join('');
-
-    document.getElementById('output').innerHTML = `
-    <div class="cards-label">${data.length} kartu siap dicetak — klik kartu untuk preview QR</div>
-    <div class="cards-grid">${cardsHtml}</div>`;
-
-    // Generate QR codes — pakai library jika tersedia, fallback ke image API
+    // Generate QR codes
     for (let i = 0; i < data.length; i++) {
-      const item    = data[i];
-      const isSiswa = tipe === 'siswa';
-      // [BUG-01] Gunakan prefix yang sama persis dengan yang ada di kartu (konsisten)
-      let qrValue;
-      if (isSiswa) {
-        qrValue = `MTS-S-${item.nis}`;
-      } else {
-        const isTU = item.tipe && (item.tipe.toLowerCase().includes('tu') || item.tipe.toLowerCase().includes('tendik'));
-        qrValue = `${isTU ? 'MTS-TU-' : 'MTS-G-'}${item.nig}`;
-      }
-      const canvas  = document.getElementById(`qr-${i}`);
-      if (canvas) await generateQR(canvas, qrValue);
+      const canvas = document.getElementById(`qr-${i}`);
+      if (canvas) await generateQR(canvas, qrValue(data[i], tipe));
     }
+
+    // Tampilkan search bar & buttons
+    showSearchBar(); showActionBtns();
+    updateStats(data.length, data.length);
+    document.getElementById('search-input').value = '';
 
     showToast('✅ ' + data.length + ' kartu berhasil dibuat');
   } catch(e) {
-    document.getElementById('output').innerHTML = '<div class="loader">Error: ' + e.message + '. Periksa koneksi dan URL API.</div>';
+    document.getElementById('output').innerHTML = `<div class="loader" style="color:var(--danger)">❌ ${e.message}</div>`;
   }
 }
 
-// ── QR Generator — pakai library atau fallback ke image API ──
-async function generateQR(canvas, qrValue) {
-  // Coba pakai library QRCode.toCanvas (butuh CDN berhasil load)
+// ── Buat HTML satu kartu ──
+function cardHtml(item, idx, tipe, theme, ta) {
+  const isSiswa  = tipe === 'siswa';
+  const qrVal    = qrValue(item, tipe);
+  const name     = item.nama || '-';
+  const id       = isSiswa ? item.nis : item.nig;
+  const sub      = isSiswa ? `Kelas ${item.kelas}` : (item.jabatan || item.tipe || 'Guru');
+  const typeLabel = isSiswa ? 'KARTU PELAJAR' : 'KARTU TENDIK';
+  const searchStr = `${name}|${id}|${isSiswa ? item.kelas : ''}`.toLowerCase();
+
+  return `
+  <div class="card-wrap-outer" id="wrap-${idx}" data-search="${searchStr}" data-idx="${idx}">
+    <!-- Checkbox select -->
+    <div class="card-select-overlay" id="sel-${idx}" onclick="toggleSelect(${idx})" title="Pilih untuk print"></div>
+
+    <!-- Kartu -->
+    <div class="card-preview theme-${theme}" onclick="toggleSelect(${idx})" title="Klik untuk pilih">
+      <div class="card-deco card-deco-1"></div>
+      <div class="card-deco card-deco-2"></div>
+      <div class="card-header-row">
+        <div class="card-school-icon">🕌</div>
+        <div class="card-school-info">
+          <div class="card-school-name">MTS Al Huda Putri Malang</div>
+          <div class="card-year">TA ${ta}</div>
+        </div>
+      </div>
+      <div class="card-body-row">
+        <div class="card-qr"><canvas id="qr-${idx}" width="52" height="52"></canvas></div>
+        <div class="card-info">
+          <div class="card-type-label">${typeLabel}</div>
+          <div class="card-name">${name}</div>
+          <div class="card-id">${id}</div>
+          <div class="card-class">${sub}</div>
+        </div>
+      </div>
+      <div class="card-stripe"></div>
+    </div>
+
+    <!-- Tombol aksi cepat -->
+    <div class="card-actions">
+      <button class="btn btn-xs btn-info"    onclick="printOne(${idx})" title="Print kartu ini saja">🖨️ Print</button>
+      <button class="btn btn-xs btn-secondary" onclick="toggleSelect(${idx})" title="Pilih/batal pilih">☑️ Pilih</button>
+    </div>
+  </div>`;
+}
+
+// ── QR value helper ──
+function qrValue(item, tipe) {
+  if (tipe === 'siswa') return `MTS-S-${item.nis}`;
+  const isTU = item.tipe && (item.tipe.toLowerCase().includes('tu') || item.tipe.toLowerCase().includes('tendik'));
+  return `${isTU ? 'MTS-TU-' : 'MTS-G-'}${item.nig}`;
+}
+
+// ══════════════════════════════════════════════════
+// FILTER / SEARCH
+// ══════════════════════════════════════════════════
+function filterCards() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const wraps = document.querySelectorAll('.card-wrap-outer');
+  let shown = 0;
+  wraps.forEach(w => {
+    const match = !q || w.dataset.search.includes(q);
+    w.classList.toggle('hidden', !match);
+    if (match) shown++;
+  });
+  totalVisible = shown;
+  updateStats(currentData.length, shown);
+  document.getElementById('search-count').textContent = q
+    ? `${shown} dari ${currentData.length} hasil`
+    : `${currentData.length} kartu`;
+}
+
+// ══════════════════════════════════════════════════
+// SELECTION (PILIH KARTU TERTENTU)
+// ══════════════════════════════════════════════════
+function toggleSelect(idx) {
+  if (selectedCards.has(idx)) {
+    selectedCards.delete(idx);
+    document.getElementById(`sel-${idx}`).classList.remove('checked');
+    document.getElementById(`wrap-${idx}`).style.outline = '';
+  } else {
+    selectedCards.add(idx);
+    document.getElementById(`sel-${idx}`).classList.add('checked');
+    document.getElementById(`wrap-${idx}`).style.outline = '2px solid var(--primary)';
+    document.getElementById(`wrap-${idx}`).style.borderRadius = '12px';
+  }
+  updateSelectedCount();
+}
+
+function selectAll() {
+  const wraps = document.querySelectorAll('.card-wrap-outer:not(.hidden)');
+  wraps.forEach(w => {
+    const idx = parseInt(w.dataset.idx);
+    if (!selectedCards.has(idx)) {
+      selectedCards.add(idx);
+      document.getElementById(`sel-${idx}`).classList.add('checked');
+      w.style.outline = '2px solid var(--primary)';
+      w.style.borderRadius = '12px';
+    }
+  });
+  updateSelectedCount();
+}
+
+function clearSelection() {
+  selectedCards.forEach(idx => {
+    const selEl = document.getElementById(`sel-${idx}`);
+    if (selEl) selEl.classList.remove('checked');
+    const wrap = document.getElementById(`wrap-${idx}`);
+    if (wrap) { wrap.style.outline = ''; wrap.style.borderRadius = ''; }
+  });
+  selectedCards.clear();
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const n = selectedCards.size;
+  document.getElementById('selected-count').textContent = n;
+  const pill = document.getElementById('stat-selected-pill');
+  document.getElementById('stat-selected').textContent = n;
+  pill.style.display = n > 0 ? 'flex' : 'none';
+}
+
+// ══════════════════════════════════════════════════
+// PRINT
+// ══════════════════════════════════════════════════
+function printAll() {
+  // Hapus semua exclude class dulu
+  document.querySelectorAll('.card-wrap-outer').forEach(w => w.classList.remove('print-exclude'));
+  window.print();
+}
+
+function printSelected() {
+  if (selectedCards.size === 0) {
+    showToast('⚠️ Pilih minimal 1 kartu dulu dengan klik kartu atau tombol ☑️ Pilih', 4000);
+    return;
+  }
+  // Exclude yang tidak dipilih
+  document.querySelectorAll('.card-wrap-outer').forEach(w => {
+    const idx = parseInt(w.dataset.idx);
+    w.classList.toggle('print-exclude', !selectedCards.has(idx));
+  });
+  window.print();
+  // Hapus exclude setelah print dialog
+  setTimeout(() => {
+    document.querySelectorAll('.print-exclude').forEach(w => w.classList.remove('print-exclude'));
+  }, 1000);
+}
+
+// Print 1 kartu langsung (dari tombol 🖨️ Print di bawah kartu)
+function printOne(idx) {
+  document.querySelectorAll('.card-wrap-outer').forEach(w => {
+    const i = parseInt(w.dataset.idx);
+    w.classList.toggle('print-exclude', i !== idx);
+  });
+  showToast(`🖨️ Mencetak kartu #${idx + 1}…`);
+  window.print();
+  setTimeout(() => {
+    document.querySelectorAll('.print-exclude').forEach(w => w.classList.remove('print-exclude'));
+  }, 1000);
+}
+
+// ══════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════
+function showSearchBar() {
+  document.getElementById('search-bar').classList.remove('search-bar-hidden');
+  document.getElementById('search-count').textContent = currentData.length + ' kartu';
+}
+function hideSearchBar()  { document.getElementById('search-bar').classList.add('search-bar-hidden'); }
+
+function showActionBtns() {
+  ['btn-print-all','btn-print-selected','btn-select-all','btn-clear-sel']
+    .forEach(id => document.getElementById(id).style.display = '');
+  document.getElementById('stats-bar').style.display = 'flex';
+}
+function hideActionBtns() {
+  ['btn-print-all','btn-print-selected','btn-select-all','btn-clear-sel']
+    .forEach(id => document.getElementById(id).style.display = 'none');
+}
+function hideStatsBar() { document.getElementById('stats-bar').style.display = 'none'; }
+function updateStats(total, tampil) {
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-tampil').textContent  = tampil;
+  document.getElementById('stats-bar').style.display  = 'flex';
+}
+
+// ══════════════════════════════════════════════════
+// QR GENERATOR
+// ══════════════════════════════════════════════════
+async function generateQR(canvas, qrVal) {
   if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function' && !window._qrLibFailed) {
     try {
-      await QRCode.toCanvas(canvas, qrValue, {
+      await QRCode.toCanvas(canvas, qrVal, {
         width: 52, margin: 1,
         color: { dark: '#FFFFFF', light: '#00000000' }
       });
       return;
-    } catch(e) {
-      console.warn('QRCode.toCanvas gagal, beralih ke image API:', e);
-    }
+    } catch(e) {}
   }
-
-  // Fallback: gunakan QR image API (tidak butuh library, butuh internet)
-  const img = document.createElement('img');
+  // Fallback: image API
+  const img  = document.createElement('img');
   img.src    = 'https://api.qrserver.com/v1/create-qr-code/?size=52x52'
-             + '&data=' + encodeURIComponent(qrValue)
+             + '&data=' + encodeURIComponent(qrVal)
              + '&bgcolor=000000&color=ffffff&format=png&qzone=1';
-  img.width  = 52;
-  img.height = 52;
-  img.alt    = qrValue;
-  img.style.cssText = 'border-radius:4px;display:block;filter:invert(1)';
+  img.width  = 52; img.height = 52; img.alt = qrVal;
+  img.style.cssText = 'border-radius:4px;display:block;';
   img.onerror = function() {
-    // Semua gagal → tampilkan teks QR value sebagai fallback terakhir
     const span = document.createElement('div');
     span.style.cssText = 'width:52px;height:52px;font-size:6px;color:#fff;word-break:break-all;padding:2px;line-height:1.2;overflow:hidden';
-    span.textContent = qrValue;
+    span.textContent = qrVal;
     canvas.parentNode.replaceChild(span, canvas);
   };
-  // Ganti canvas dengan img
   canvas.parentNode.replaceChild(img, canvas);
 }
 
+// ══════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════
 let toastTimer;
-function showToast(msg) {
+function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
-
-// Init
-onTipeChange();
 </script>
-<div class="qr-footer">Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener">weverx.com</a></div>
+
 <script>
-// Theme
+// Theme & Splash
 (function(){
   const saved = localStorage.getItem('mts_theme');
   const isDark = saved ? saved === 'dark' : true;
@@ -469,7 +653,6 @@ onTipeChange();
     const btn = document.getElementById('qr-theme-btn');
     if (btn) btn.textContent = '☀️';
   }
-  // Splash
   const splash = document.getElementById('splash-screen');
   if (splash) setTimeout(() => { splash.style.opacity='0'; splash.style.visibility='hidden'; }, 1600);
 })();

@@ -581,6 +581,26 @@ let html5QrCode     = null;
 const API = APP_CONFIG.API_URL;
 const COOLDOWN = APP_CONFIG.SCAN_COOLDOWN_MS || 2500;
 
+// [FIX-COUNTER] Ambil counter hari ini dari server saat startup
+async function loadCounterFromServer() {
+  try {
+    const today = new Date();
+    const tanggal = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const res = await fetch(`${API}?action=get_attendance_summary&tanggal=${tanggal}&token=${encodeURIComponent(deviceToken || '')}&_t=${Date.now()}`, {
+      cache: 'no-store'
+    });
+    const data = await res.json();
+    if (data.success && data.summary) {
+      scanCount.hadir     = (data.summary.hadir     || 0) + (data.summary.tepat_waktu || 0);
+      scanCount.terlambat = data.summary.terlambat  || 0;
+      scanCount.total     = (data.summary.total_scan || data.summary.total || 0);
+      updateCountDisplay();
+    }
+  } catch(e) {
+    // Gagal fetch counter — biarkan tetap dari sesi lokal
+  }
+}
+
 // ══════════════════════════════════════════════════════════
 // THEME (DARK / LIGHT MODE)
 // ══════════════════════════════════════════════════════════
@@ -632,6 +652,8 @@ window.addEventListener('DOMContentLoaded', () => {
     validateToken().then(valid => {
       if (valid) {
         showMainScreen();
+        // [FIX-COUNTER] Load counter dari server setelah tampil
+        setTimeout(loadCounterFromServer, 1000);
       } else {
         deviceToken = null;
         localStorage.removeItem('mts_device_token');
@@ -639,7 +661,6 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }).catch(() => {
       // Server tidak bisa dihubungi saat init → tetap coba tampilkan scanner
-      // (offline mode)
       showMainScreen();
     });
   } else {
@@ -733,7 +754,10 @@ function enterManualToken() {
 async function validateToken(token = deviceToken) {
   if (!token) return false;
   try {
-    const res = await fetch(`${API}?action=validate_device&token=${encodeURIComponent(token)}`);
+    // [FIX-CACHE] Tambah _t cache buster agar validasi tidak terkena cache
+    const res = await fetch(`${API}?action=validate_device&token=${encodeURIComponent(token)}&_t=${Date.now()}`, {
+      cache: 'no-store'
+    });
     const data = await res.json();
     return data.valid === true;
   } catch { return true; } // offline → asumsikan valid
@@ -1003,7 +1027,11 @@ async function syncOfflineQueue() {
   }
 
   saveOfflineQueue();
-  if (success > 0) showToast('✅ ' + success + ' data berhasil disinkronkan');
+  if (success > 0) {
+    showToast('\u2705 ' + success + ' data berhasil disinkronkan');
+    // [FIX-COUNTER] Reload counter dari server setelah sync offline
+    setTimeout(loadCounterFromServer, 1000);
+  }
 }
 
 function onOnline() {

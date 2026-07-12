@@ -1,10 +1,10 @@
-const CACHE_NAME = 'mts-dashboard-v2';
+// Service Worker — Dashboard Admin — MTS Al Huda Putri
+// [FIX-03] Versi v4: absolute paths, cache buster, tidak intercept API
+const CACHE_NAME = 'mts-dashboard-v4';
 const ASSETS = [
-  './',
-  './index.html',
-  '../assets/js/config.js',
-  '../assets/icons/logo-mts.png',
-  '../assets/icons/favicon.ico',
+  '/dashboard/index.html',
+  '/assets/js/config.js',
+  '/assets/icons/icon-192.png',
 ];
 
 self.addEventListener('install', e => {
@@ -23,11 +23,20 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Network-first strategy (always try network, fallback to cache)
+// Network-first strategy
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  // Skip Google APIs and CDN requests
-  if (e.request.url.includes('googleapis') || e.request.url.includes('jsdelivr') || e.request.url.includes('script.google.com')) return;
+
+  // [FIX-CACHE] Jangan intercept API calls ke Google Apps Script — selalu network
+  if (e.request.url.includes('script.google.com')) return;
+
+  // Jangan intercept CDN & Google Fonts
+  if (e.request.url.includes('googleapis.com') ||
+      e.request.url.includes('gstatic.com') ||
+      e.request.url.includes('jsdelivr.net') ||
+      e.request.url.includes('unpkg.com')) return;
+
+  // Network-first untuk semua asset lain
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );

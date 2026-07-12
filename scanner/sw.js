@@ -1,11 +1,9 @@
-// Service Worker — Presensi MTS Al Huda Putri
-const CACHE_NAME = 'presensi-mts-v1';
+// Service Worker — Scanner Presensi — MTS Al Huda Putri
+// [FIX-03] Versi v3: absolute paths, perbaikan scope conflict
+const CACHE_NAME = 'presensi-scanner-v3';
 const ASSETS = [
-  '/scanner/',
   '/scanner/index.html',
   '/assets/js/config.js',
-  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap',
-  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
 ];
 
 self.addEventListener('install', e => {
@@ -25,10 +23,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first untuk API calls, cache first untuk assets
+  // [FIX-CACHE] API calls ke Google Apps Script — selalu network, jangan cache
   if (e.request.url.includes('script.google.com')) {
-    // API calls — selalu network, jangan cache
-    e.respondWith(fetch(e.request).catch(() =>
+    e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() =>
       new Response(JSON.stringify({ success: false, offline: true }), {
         headers: { 'Content-Type': 'application/json' }
       })
@@ -36,12 +33,20 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Untuk assets — cache first, fallback network
+  // Jangan intercept CDN & Google Fonts/APIs
+  if (e.request.url.includes('googleapis.com') ||
+      e.request.url.includes('gstatic.com') ||
+      e.request.url.includes('jsdelivr.net') ||
+      e.request.url.includes('unpkg.com')) return;
+
+  // Cache-first untuk assets lokal scanner
   e.respondWith(
     caches.match(e.request).then(cached =>
       cached || fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
         return res;
       })
     ).catch(() => caches.match('/scanner/index.html'))
