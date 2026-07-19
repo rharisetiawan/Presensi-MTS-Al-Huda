@@ -1,9 +1,9 @@
-// Service Worker — Scanner Presensi — MTS Al Huda Putri
-// [FIX-03] Versi v3: absolute paths, perbaikan scope conflict
-const CACHE_NAME = 'presensi-scanner-v3';
+// Service Worker — Presensi MTS Al Huda Putri
+// Bump CACHE_NAME setiap kali merilis perubahan agar HP scanner otomatis
+// mengambil versi terbaru (bukan versi lama yang tersangkut di cache).
+const CACHE_NAME = 'presensi-mts-v2';
 const ASSETS = [
-  '/scanner/index.html',
-  '/assets/js/config.js',
+  '../assets/js/config.js'
 ];
 
 self.addEventListener('install', e => {
@@ -23,9 +23,11 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // [FIX-CACHE] API calls ke Google Apps Script — selalu network, jangan cache
+  if (e.request.method !== 'GET') return;
+
+  // API calls — selalu network, jangan cache
   if (e.request.url.includes('script.google.com')) {
-    e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() =>
+    e.respondWith(fetch(e.request).catch(() =>
       new Response(JSON.stringify({ success: false, offline: true }), {
         headers: { 'Content-Type': 'application/json' }
       })
@@ -33,22 +35,28 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Jangan intercept CDN & Google Fonts/APIs
-  if (e.request.url.includes('googleapis.com') ||
-      e.request.url.includes('gstatic.com') ||
-      e.request.url.includes('jsdelivr.net') ||
-      e.request.url.includes('unpkg.com')) return;
+  // Halaman HTML (navigasi) — network-first, supaya perbaikan/rilis baru
+  // langsung terpakai. Cache hanya jadi fallback saat benar-benar offline.
+  const isNavigation = e.request.mode === 'navigate' || (e.request.headers.get('accept') || '').includes('text/html');
+  if (isNavigation) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        return res;
+      }).catch(() => caches.match(e.request).then(cached => cached || caches.match('./index.html')))
+    );
+    return;
+  }
 
-  // Cache-first untuk assets lokal scanner
+  // Asset lain (JS/CSS/font/gambar) — cache first, fallback network
   e.respondWith(
     caches.match(e.request).then(cached =>
       cached || fetch(e.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
         return res;
       })
-    ).catch(() => caches.match('/scanner/index.html'))
+    )
   );
 });
