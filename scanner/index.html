@@ -484,6 +484,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="theme-toggle" onclick="clearAppCache()" id="refresh-btn" title="Perbarui aplikasi ke versi terbaru">🔄</button>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Ganti tema">🌙</button>
       <div class="status-dot" id="conn-dot" title="Status koneksi"></div>
       <div class="header-clock">
@@ -616,7 +617,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // 2. Inject footer credit
   const footerEl = document.getElementById('app-footer');
   if (footerEl && APP_CONFIG.FOOTER_CREDIT) {
-    footerEl.innerHTML = APP_CONFIG.FOOTER_CREDIT;
+    // Tampilkan versi agar mudah dicek apakah HP sudah memakai versi terbaru
+    footerEl.innerHTML = APP_CONFIG.FOOTER_CREDIT +
+      ' · <span style="opacity:0.7">v' + (APP_CONFIG.VERSION || '-') + '</span>';
   }
 
   updateClock();
@@ -1110,6 +1113,37 @@ async function apiPost(payload) {
 }
 
 // ══════════════════════════════════════════════════════════
+// PERBARUI APLIKASI — bersihkan cache versi lama
+// ══════════════════════════════════════════════════════════
+// PENTING: hanya menghapus cache service worker. localStorage SENGAJA tidak
+// disentuh karena berisi token perangkat (mts_device_token) dan antrian scan
+// offline (mts_offline_queue) — menghapusnya berarti HP harus didaftarkan
+// ulang oleh TU dan data absensi yang belum tersinkron akan hilang.
+async function clearAppCache() {
+  if (offlineQueue.length > 0) {
+    const lanjut = confirm('⚠️ Masih ada ' + offlineQueue.length + ' data absensi yang belum tersinkron.\n\n' +
+      'Data ini TIDAK akan terhapus, tapi sebaiknya sambungkan ke internet dulu agar tersinkron.\n\nTetap perbarui aplikasi sekarang?');
+    if (!lanjut) return;
+  } else {
+    if (!confirm('Perbarui scanner ke versi terbaru?\n\nToken perangkat dan data absensi TIDAK terhapus.')) return;
+  }
+
+  showToast('⏳ Membersihkan cache...');
+  try {
+    if (html5QrCode) { try { await html5QrCode.stop(); } catch (e) {} }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) { /* sebagian gagal dibersihkan -> tetap lanjut reload */ }
+  location.replace(location.pathname + '?v=' + Date.now());
+}
+
+// ══════════════════════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════════════════════
 let toastTimer = null;
@@ -1121,9 +1155,20 @@ function showToast(msg, duration = 3000) {
   toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-// Register Service Worker
+// Register Service Worker + deteksi versi baru
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          showToast('🔄 Versi baru tersedia — ketuk tombol 🔄 di atas', 6000);
+        }
+      });
+    });
+    reg.update().catch(() => {});
+  }).catch(() => {});
 }
 </script>
 </body>

@@ -382,6 +382,8 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
       <div class="sidebar-bottom">
         <div class="nav-item" onclick="window.open('../scanner/','_blank')"><span class="nav-icon">📷</span> Buka Scanner</div>
         <div class="nav-item" onclick="window.open('../qrcard/','_blank')"><span class="nav-icon">🪪</span> Generator QR Card</div>
+        <div class="nav-item" onclick="clearAppCache()" title="Muat ulang aplikasi versi terbaru"><span class="nav-icon">🔄</span> Perbarui Aplikasi</div>
+        <div style="padding:6px 8px 0;font-size:10px;color:var(--text-muted);text-align:center" id="sidebar-version"></div>
         <div style="padding:10px 8px 0;font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5">Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;font-weight:600">weverx.com</a></div>
       </div>
     </div>
@@ -526,6 +528,13 @@ async function logout() {
 window.addEventListener('DOMContentLoaded', () => {
   updateHeaderDate();
   setInterval(updateHeaderDate, 60000);
+
+  // Tampilkan versi aplikasi (memudahkan cek apakah HP sudah memakai versi terbaru)
+  const ver = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.VERSION) ? APP_CONFIG.VERSION : '-';
+  const verSidebar = document.getElementById('sidebar-version');
+  if (verSidebar) verSidebar.textContent = 'Versi ' + ver;
+  const verLogin = document.querySelector('.login-version');
+  if (verLogin) verLogin.textContent = 'v' + ver + ' · Autentikasi Server-Side Aman';
 
   if (SESSION_TOKEN && USER_ROLE) {
     // Validasi session yang tersimpan — timeout 8 detik
@@ -2803,6 +2812,29 @@ async function exportDataGuru() {
 // ══════════════════════════════════════════════════════════════
 // UTILS
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// PERBARUI APLIKASI — bersihkan cache versi lama
+// ══════════════════════════════════════════════════════════════
+// Menghapus cache service worker saja. Data login (sessionStorage) dan
+// preferensi tema (localStorage) SENGAJA tidak disentuh agar user tidak
+// perlu login ulang setelah memperbarui.
+async function clearAppCache() {
+  if (!confirm('Perbarui aplikasi ke versi terbaru?\n\nCache akan dibersihkan dan halaman dimuat ulang.\nData absensi dan sesi login TIDAK terhapus.')) return;
+  showToast('⏳ Membersihkan cache...', 'warn');
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) { /* sebagian gagal dibersihkan -> tetap lanjut reload */ }
+  // Reload dengan cache-busting agar browser tidak memakai HTML lama dari cache HTTP
+  location.replace(location.pathname + '?v=' + Date.now());
+}
+
 function showContent(html) { document.getElementById('content').innerHTML = html; }
 function showModal(html) {
   document.getElementById('modal-body').innerHTML = html;
@@ -2946,10 +2978,23 @@ async function readExcel(file) {
 }
 </script>
 <script>
-// ── PWA: Register Service Worker ──
+// ── PWA: Register Service Worker + deteksi versi baru ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // Beri tahu user saat ada versi baru yang siap dipakai
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            showToast('🔄 Versi baru tersedia — klik "Perbarui Aplikasi" di menu kiri', 'warn');
+          }
+        });
+      });
+      // Cek pembaruan tiap kali dashboard dibuka
+      reg.update().catch(() => {});
+    }).catch(() => {});
   });
 }
 

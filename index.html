@@ -77,7 +77,27 @@
   </div>
 
   <footer>
-    v2.1.0 &nbsp;·&nbsp; Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener">weverx.com</a>
+    v2.1.0 &nbsp;·&nbsp; Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener">weverx.com</a><br/>
+    <a href="#" onclick="clearAppCache();return false;">🔄 Perbarui Aplikasi</a>
   </footer>
+
+  <script>
+  // Bersihkan cache service worker semua aplikasi (dashboard/scanner/qrcard)
+  // jika browser masih menampilkan versi lama.
+  async function clearAppCache() {
+    if (!confirm('Perbarui aplikasi ke versi terbaru?\n\nCache akan dibersihkan dan halaman dimuat ulang.')) return;
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+    } catch (e) { /* sebagian gagal dibersihkan -> tetap lanjut reload */ }
+    location.replace(location.pathname + '?v=' + Date.now());
+  }
+  </script>
 </body>
 </html>
