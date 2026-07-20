@@ -172,6 +172,16 @@ function getSheet(name) {
 function nowJakarta()   { return Utilities.formatDate(new Date(), TIMEZONE, 'HH:mm:ss'); }
 function todayJakarta() { return Utilities.formatDate(new Date(), TIMEZONE, 'yyyy-MM-dd'); }
 
+// Google Sheets kadang otomatis mengubah sel bertipe teks 'yyyy-MM-dd' menjadi
+// nilai Date asli (mis. setelah diedit manual di UI Sheets). Kalau ini terjadi,
+// perbandingan string biasa (rows[i][1] === tanggal) akan selalu gagal secara
+// diam-diam. Fungsi ini menormalkan nilai sel Tanggal apa pun (Date atau
+// String) kembali ke format 'yyyy-MM-dd' sebelum dibandingkan/dipakai.
+function _dateStr(val) {
+  if (val instanceof Date) return Utilities.formatDate(val, TIMEZONE, 'yyyy-MM-dd');
+  return String(val || '');
+}
+
 function nowMinutes() {
   const jakartaTime = Utilities.formatDate(new Date(), TIMEZONE, 'HH:mm');
   const [h, m] = jakartaTime.split(':').map(Number);
@@ -503,7 +513,7 @@ function _getAllHariLiburCached() {
   const rows  = sheet.getDataRange().getValues();
   list = [];
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0]) list.push({ id: rows[i][0], tanggal: rows[i][1], keterangan: rows[i][2] });
+    if (rows[i][0]) list.push({ id: rows[i][0], tanggal: _dateStr(rows[i][1]), keterangan: rows[i][2] });
   }
   _cacheSet('hari_libur_v1', list, 3600);
   return list;
@@ -521,7 +531,7 @@ function addHariLibur(data) {
   const sheet = getSheet(SHEET_HARI_LIBUR);
   const rows  = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][1] === data.tanggal) {
+    if (_dateStr(rows[i][1]) === data.tanggal) {
       return jsonResponse({ success: false, message: 'Tanggal ' + data.tanggal + ' sudah terdaftar sebagai hari libur.' });
     }
   }
@@ -538,7 +548,7 @@ function deleteHariLibur(data) {
   const rows  = sheet.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(data.id)) {
-      _addAuditLog('DELETE_HARI_LIBUR', rows[i][1], rows[i][2], '', data._role, data._role);
+      _addAuditLog('DELETE_HARI_LIBUR', _dateStr(rows[i][1]), rows[i][2], '', data._role, data._role);
       sheet.deleteRow(i + 1);
       _cacheRemove('hari_libur_v1');
       return jsonResponse({ success: true, message: 'Hari libur berhasil dihapus.' });
@@ -690,7 +700,7 @@ function _getAbsenSiswaMapCached(tanggal) {
   const rows = getSheet(SHEET_ABSEN_SISWA).getDataRange().getValues();
   map = {};
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][1] === tanggal) map[String(rows[i][2])] = { jam: rows[i][5], status: rows[i][6] };
+    if (_dateStr(rows[i][1]) === tanggal) map[String(rows[i][2])] = { jam: rows[i][5], status: rows[i][6] };
   }
   _cacheSet(key, map, 21600);
   return map;
@@ -703,7 +713,7 @@ function _getAbsenGuruMapCached(tanggal) {
   const rows = getSheet(SHEET_ABSEN_GURU).getDataRange().getValues();
   map = {};
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][1] === tanggal) {
+    if (_dateStr(rows[i][1]) === tanggal) {
       map[String(rows[i][2])] = {
         rowIndex: i + 1, jamMasuk: rows[i][4], statusMasuk: rows[i][5],
         jamPulang: rows[i][6], statusPulang: rows[i][7]
@@ -834,7 +844,7 @@ function addAttendance(data) {
 
   // Cek apakah sudah ada record → update
   for (let i = 1; i < absenRows.length; i++) {
-    if (String(absenRows[i][2]) === nis && absenRows[i][1] === tanggal) {
+    if (String(absenRows[i][2]) === nis && _dateStr(absenRows[i][1]) === tanggal) {
       const oldStatus = absenRows[i][6];
       if (data.status)                 sheetAbsen.getRange(i + 1, 7).setValue(data.status);
       if (data.keterangan !== undefined) sheetAbsen.getRange(i + 1, 8).setValue(data.keterangan);
@@ -885,7 +895,7 @@ function addAttendanceGuru(data) {
 
   // Cek apakah sudah ada → update
   for (let i = 1; i < absenRows.length; i++) {
-    if (String(absenRows[i][2]) === nig && absenRows[i][1] === tanggal) {
+    if (String(absenRows[i][2]) === nig && _dateStr(absenRows[i][1]) === tanggal) {
       const oldStatus = absenRows[i][5];
       if (data.statusMasuk)            sheetAbsen.getRange(i + 1, 6).setValue(data.statusMasuk);
       if (data.keterangan !== undefined) sheetAbsen.getRange(i + 1, 9).setValue(data.keterangan);
@@ -992,9 +1002,9 @@ function getAttendance(params) {
   const rowsS      = sheetS.getDataRange().getValues();
   const absenSiswa = [];
   for (let i = 1; i < rowsS.length; i++) {
-    if (rowsS[i][1] === tanggal && (!kelas || rowsS[i][4] === kelas)) {
+    if (_dateStr(rowsS[i][1]) === tanggal && (!kelas || rowsS[i][4] === kelas)) {
       absenSiswa.push({
-        id: rowsS[i][0], tanggal: rowsS[i][1], nis: rowsS[i][2],
+        id: rowsS[i][0], tanggal: _dateStr(rowsS[i][1]), nis: rowsS[i][2],
         nama: rowsS[i][3], kelas: rowsS[i][4], jamMasuk: rowsS[i][5],
         status: rowsS[i][6], keterangan: rowsS[i][7]
       });
@@ -1005,9 +1015,9 @@ function getAttendance(params) {
   const rowsG     = sheetG.getDataRange().getValues();
   const absenGuru = [];
   for (let i = 1; i < rowsG.length; i++) {
-    if (rowsG[i][1] === tanggal) {
+    if (_dateStr(rowsG[i][1]) === tanggal) {
       absenGuru.push({
-        id: rowsG[i][0], tanggal: rowsG[i][1], nig: rowsG[i][2],
+        id: rowsG[i][0], tanggal: _dateStr(rowsG[i][1]), nig: rowsG[i][2],
         nama: rowsG[i][3], jamMasuk: rowsG[i][4], statusMasuk: rowsG[i][5],
         jamPulang: rowsG[i][6], statusPulang: rowsG[i][7], keterangan: rowsG[i][8]
       });
@@ -1112,7 +1122,7 @@ function getReport(params) {
   }
 
   for (let i = 1; i < rowsAbsen.length; i++) {
-    const tgl = String(rowsAbsen[i][1]);
+    const tgl = _dateStr(rowsAbsen[i][1]);
     if (!tgl.startsWith(bulan)) continue;
     if (hariLiburSet.has(tgl)) continue;
     const nis    = String(rowsAbsen[i][2]);
@@ -1148,7 +1158,7 @@ function getReportGuru(params) {
   }
 
   for (let i = 1; i < rowsAbsen.length; i++) {
-    const tgl = String(rowsAbsen[i][1]);
+    const tgl = _dateStr(rowsAbsen[i][1]);
     if (!tgl.startsWith(bulan)) continue;
     if (hariLiburSet.has(tgl)) continue;
     const nig          = String(rowsAbsen[i][2]);
@@ -1187,7 +1197,7 @@ function getSummaryWali(params) {
   const dateSet  = new Set();
   const absenMap = {}; // key: "nis_tanggal"
   for (let i = 1; i < rowsAbsen.length; i++) {
-    const tgl = String(rowsAbsen[i][1]);
+    const tgl = _dateStr(rowsAbsen[i][1]);
     if (!tgl.startsWith(bulan)) continue;
     if (hariLiburSet.has(tgl)) continue;
     dateSet.add(tgl);
@@ -1209,13 +1219,13 @@ function getAbsenRange(params) {
   const result = [];
 
   for (let i = 1; i < rows.length; i++) {
-    const tgl = rows[i][1];
+    const tgl = _dateStr(rows[i][1]);
     if (dari   && tgl < dari)   continue;
     if (sampai && tgl > sampai) continue;
     if (tipe === 'siswa') {
-      result.push({ id: rows[i][0], tanggal: rows[i][1], nis: rows[i][2], nama: rows[i][3], kelas: rows[i][4], jamMasuk: rows[i][5], status: rows[i][6], keterangan: rows[i][7] });
+      result.push({ id: rows[i][0], tanggal: tgl, nis: rows[i][2], nama: rows[i][3], kelas: rows[i][4], jamMasuk: rows[i][5], status: rows[i][6], keterangan: rows[i][7] });
     } else {
-      result.push({ id: rows[i][0], tanggal: rows[i][1], nig: rows[i][2], nama: rows[i][3], jamMasuk: rows[i][4], statusMasuk: rows[i][5], jamPulang: rows[i][6], statusPulang: rows[i][7], keterangan: rows[i][8] });
+      result.push({ id: rows[i][0], tanggal: tgl, nig: rows[i][2], nama: rows[i][3], jamMasuk: rows[i][4], statusMasuk: rows[i][5], jamPulang: rows[i][6], statusPulang: rows[i][7], keterangan: rows[i][8] });
     }
   }
 
@@ -1240,8 +1250,8 @@ function updateAttendance(data) {
         if (data.keterangan !== undefined) sheet.getRange(i + 1, 8).setValue(data.keterangan);
       }
       SpreadsheetApp.flush(); // [FIX-02] Paksa commit data sebelum return
-      _cacheRemove((data.tipe === 'guru' ? 'absen_g_' : 'absen_s_') + rows[i][1]);
-      _addAuditLog('UPDATE_ABSEN', rows[i][2] + '@' + rows[i][1], oldStatus, data.status || data.statusMasuk, data._role, data._role);
+      _cacheRemove((data.tipe === 'guru' ? 'absen_g_' : 'absen_s_') + _dateStr(rows[i][1]));
+      _addAuditLog('UPDATE_ABSEN', rows[i][2] + '@' + _dateStr(rows[i][1]), oldStatus, data.status || data.statusMasuk, data._role, data._role);
       return jsonResponse({ success: true, message: 'Data absen berhasil diperbarui.' });
     }
   }
@@ -1521,6 +1531,13 @@ function setupSpreadsheet() {
   ss.getSheetByName(SHEET_HARI_LIBUR).getRange(1,1,1,3).setValues([[
     'ID','Tanggal','Keterangan'
   ]]);
+  // Kolom Tanggal dipaksa Plain Text — mencegah Google Sheets otomatis
+  // mengubahnya jadi nilai Date asli (yang bikin perbandingan string gagal
+  // diam-diam). Backend tetap menormalkan saat membaca (lihat _dateStr) untuk
+  // sheet yang sudah lama dibuat sebelum kolom ini diformat ulang.
+  ss.getSheetByName(SHEET_ABSEN_SISWA).getRange('B2:B').setNumberFormat('@STRING@');
+  ss.getSheetByName(SHEET_ABSEN_GURU).getRange('B2:B').setNumberFormat('@STRING@');
+  ss.getSheetByName(SHEET_HARI_LIBUR).getRange('B2:B').setNumberFormat('@STRING@');
   ss.getSheetByName(SHEET_AUDIT_LOG).getRange(1,1,1,8).setValues([[
     'Tanggal','Jam','Aksi','Target','Sebelum','Sesudah','Oleh','Role'
   ]]);
