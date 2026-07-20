@@ -7,11 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <!-- QRCode library — multi-CDN dengan fallback otomatis -->
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js" onerror="loadQRFallback()"></script>
+  <script src="https://unpkg.com/qrcode@1.4.4/build/qrcode.min.js" onerror="loadQRFallback()"></script>
   <script>
     function loadQRFallback() {
       var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+      s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js';
       s.onerror = function() { window._qrLibFailed = true; };
       document.head.appendChild(s);
     }
@@ -622,7 +622,9 @@ async function generateQR(canvas, qrVal) {
     try {
       await QRCode.toCanvas(canvas, qrVal, {
         width: 52, margin: 1,
-        color: { dark: '#FFFFFF', light: '#00000000' }
+        // Modul gelap di atas latar terang — QR putih-di-atas-transparan (versi lama)
+        // menghasilkan kode "negatif" yang sering gagal dipindai scanner.
+        color: { dark: '#000000', light: '#FFFFFF' }
       });
       return;
     } catch(e) {

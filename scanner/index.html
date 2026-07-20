@@ -457,15 +457,12 @@
 <div id="setup-screen">
   <img src="../assets/icons/logo-mts.png" alt="Logo MTS" style="width:80px;height:80px;object-fit:contain;margin-bottom:4px" />
   <div class="setup-title">Scanner Presensi<br/>MTS Al Huda Putri</div>
-  <div class="setup-sub">HP ini belum terdaftar sebagai perangkat scanner. Hubungi admin (TU) untuk mendapatkan token registrasi.</div>
+  <div class="setup-sub">HP ini belum terdaftar sebagai perangkat scanner. Minta token registrasi dari admin (TU) lewat menu "Perangkat Scanner" di Dashboard.</div>
 
   <div class="setup-card">
-    <div class="setup-label">Nama Perangkat</div>
-    <input id="device-name" class="setup-input" type="text" placeholder="cth: HP Scanner Gerbang" />
     <div class="setup-label">Token Registrasi (dari Admin)</div>
     <input id="reg-token" class="setup-input" type="text" placeholder="MTS-XXXX-XXXX-XXXX" style="font-family:monospace;letter-spacing:0.1em" />
     <button class="setup-btn" onclick="registerDevice()">Daftarkan Perangkat</button>
-    <button class="setup-btn secondary" onclick="enterManualToken()">Sudah punya token? Masukkan di sini</button>
   </div>
 </div>
 
@@ -718,46 +715,21 @@ function updateClock() {
 // DEVICE SETUP
 // ══════════════════════════════════════════════════════════
 async function registerDevice() {
-  const name  = document.getElementById('device-name').value.trim();
+  // Token registrasi hanya bisa dibuat oleh TU dari Dashboard (menu "Perangkat
+  // Scanner") — endpoint register_device sekarang wajib sesi login TU, jadi
+  // scanner tidak bisa lagi minta token baru langsung ke server sendiri.
   const token = document.getElementById('reg-token').value.trim();
 
-  if (!name) { showToast('Masukkan nama perangkat'); return; }
+  if (!token) { showToast('Masukkan token registrasi dari admin'); return; }
 
-  if (token) {
-    // User memberikan token manual (sudah punya token dari admin)
-    const valid = await validateToken(token);
-    if (valid) {
-      deviceToken = token;
-      localStorage.setItem('mts_device_token', token);
-      showToast('✅ Perangkat berhasil didaftarkan!');
-      setTimeout(showMainScreen, 1000);
-    } else {
-      showToast('❌ Token tidak valid atau tidak aktif');
-    }
-    return;
-  }
-
-  // Request token baru dari server (admin harus approve dulu di dashboard)
-  showToast('Mendaftarkan perangkat...');
-  try {
-    const res = await apiPost({ action: 'register_device', name, location: 'Pintu Masuk Sekolah' });
-    if (res.success) {
-      deviceToken = res.token;
-      localStorage.setItem('mts_device_token', res.token);
-      showToast('✅ Token: ' + res.token);
-      setTimeout(showMainScreen, 2000);
-    } else {
-      showToast('❌ ' + res.message);
-    }
-  } catch(e) {
-    showToast('❌ Tidak dapat terhubung ke server');
-  }
-}
-
-function enterManualToken() {
-  const token = prompt('Masukkan token yang diberikan admin:');
-  if (token) {
-    document.getElementById('reg-token').value = token.trim();
+  const valid = await validateToken(token);
+  if (valid) {
+    deviceToken = token;
+    localStorage.setItem('mts_device_token', token);
+    showToast('✅ Perangkat berhasil didaftarkan!');
+    setTimeout(showMainScreen, 1000);
+  } else {
+    showToast('❌ Token tidak valid atau tidak aktif');
   }
 }
 
