@@ -8,8 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="../assets/js/config.js"></script>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/x-icon" href="../assets/icons/favicon.ico" />
@@ -384,6 +382,8 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
       <div class="sidebar-bottom">
         <div class="nav-item" onclick="window.open('../scanner/','_blank')"><span class="nav-icon">📷</span> Buka Scanner</div>
         <div class="nav-item" onclick="window.open('../qrcard/','_blank')"><span class="nav-icon">🪪</span> Generator QR Card</div>
+        <div class="nav-item" onclick="clearAppCache()" title="Muat ulang aplikasi versi terbaru"><span class="nav-icon">🔄</span> Perbarui Aplikasi</div>
+        <div style="padding:6px 8px 0;font-size:10px;color:var(--text-muted);text-align:center" id="sidebar-version"></div>
         <div style="padding:10px 8px 0;font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5">Made with ❤️ by <a href="https://weverx.com" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;font-weight:600">weverx.com</a></div>
       </div>
     </div>
@@ -425,6 +425,22 @@ let selectedRole  = 'TU';
 
 const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+// ── LAZY LOAD LIBRARY EKSTERNAL — hanya dimuat saat benar-benar dipakai ──
+const CHART_JS_URL   = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+const XLSX_JS_URL    = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+const _loadedScripts = {};
+function loadScript(src) {
+  if (_loadedScripts[src]) return _loadedScripts[src];
+  _loadedScripts[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload  = resolve;
+    s.onerror = () => { delete _loadedScripts[src]; reject(new Error('Gagal memuat pustaka: ' + src)); };
+    document.head.appendChild(s);
+  });
+  return _loadedScripts[src];
+}
 
 // ── XSS protection ──
 function esc(str) {
@@ -513,6 +529,13 @@ window.addEventListener('DOMContentLoaded', () => {
   updateHeaderDate();
   setInterval(updateHeaderDate, 60000);
 
+  // Tampilkan versi aplikasi (memudahkan cek apakah HP sudah memakai versi terbaru)
+  const ver = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.VERSION) ? APP_CONFIG.VERSION : '-';
+  const verSidebar = document.getElementById('sidebar-version');
+  if (verSidebar) verSidebar.textContent = 'Versi ' + ver;
+  const verLogin = document.querySelector('.login-version');
+  if (verLogin) verLogin.textContent = 'v' + ver + ' · Autentikasi Server-Side Aman';
+
   if (SESSION_TOKEN && USER_ROLE) {
     // Validasi session yang tersimpan — timeout 8 detik
     const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
@@ -532,16 +555,19 @@ window.addEventListener('DOMContentLoaded', () => {
           USER_ROLE     = null;
           document.getElementById('pin-input').focus();
         }
+        dismissSplash();
       }).catch(() => {
         // Jika server tidak bisa dihubungi atau timeout → paksa login ulang
         sessionStorage.clear();
         SESSION_TOKEN = null;
         USER_ROLE     = null;
         document.getElementById('pin-input').focus();
+        dismissSplash();
       });
 
   } else {
     document.getElementById('pin-input').focus();
+    dismissSplash();
   }
 });
 
@@ -596,13 +622,15 @@ function applyRoleNavigation() {
 // ══════════════════════════════════════════════════════════════
 function navigate(page) {
   // Cek izin akses berdasarkan role
-  const KEPSEK_ONLY_READ = ['data-siswa','data-guru','hari-libur','perangkat','pengaturan'];
-  const TU_ONLY = ['audit-log'];
-  const WALI_ALLOWED = ['home','absen-siswa','absen-guru','laporan-siswa','laporan-guru','wali-kelas'];
-  const TU_ONLY_PAGES = ['audit-log','panduan-admin'];
+  const WALI_ALLOWED  = ['home','absen-siswa','absen-guru','laporan-siswa','laporan-guru','wali-kelas'];
+  const TU_ONLY_PAGES = ['audit-log','pengaturan','panduan-admin'];
 
   if (USER_ROLE === 'WALI' && !WALI_ALLOWED.includes(page)) {
     showToast('Akses tidak diizinkan untuk role Wali Kelas', 'error');
+    return;
+  }
+  if (USER_ROLE === 'KEPSEK' && TU_ONLY_PAGES.includes(page)) {
+    showToast('Halaman ini khusus TU', 'error');
     return;
   }
 
@@ -740,22 +768,27 @@ async function renderHome() {
     });
     const ctx = document.getElementById('kelasChart');
     if (ctx) {
+      await loadScript(CHART_JS_URL);
       if (chartInstance) chartInstance.destroy();
+      const isLight    = document.body.classList.contains('light-mode');
+      const tickColor  = isLight ? '#475569' : '#94a3b8';
+      const gridColor  = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
+      const totalColor = isLight ? '#cbd5e1' : '#1a2e4a';
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: chartData.map(d => 'Kelas ' + d.kelas),
           datasets: [
             { label: 'Hadir', data: chartData.map(d => d.hadir), backgroundColor: '#10b981', borderRadius: 6 },
-            { label: 'Total', data: chartData.map(d => d.total), backgroundColor: '#1a2e4a', borderRadius: 6 }
+            { label: 'Total', data: chartData.map(d => d.total), backgroundColor: totalColor, borderRadius: 6 }
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans' } } } },
+          plugins: { legend: { labels: { color: tickColor, font: { family: 'Plus Jakarta Sans' } } } },
           scales: {
-            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            y: { ticks: { color: '#94a3b8', stepSize: 5 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+            y: { ticks: { color: tickColor, stepSize: 5 }, grid: { color: gridColor } }
           }
         }
       });
@@ -839,7 +872,7 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
                 <td>${esc(a.jamMasuk||'-')}</td>
                 <td>${badgeHtml(a.status)}</td>
                 <td class="td-muted">${esc(a.keterangan||'-')}</td>
-                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsen('${esc(a.id)}','siswa','${esc(a.nama)}','${esc(a.status)}')">✏️ Edit</button></td>` : ''}
+                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsen('${esc(a.id)}','siswa','${esc(a.nama)}','${esc(a.status)}','${esc(a.keterangan||'')}')">✏️ Edit</button></td>` : ''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -923,7 +956,7 @@ async function renderAbsenGuru(tanggal = todayStr()) {
                 <td>${esc(a.jamPulang||'-')}</td>
                 <td>${a.statusPulang ? badgeHtml(a.statusPulang,'pulang') : '<span style="color:var(--text-muted)">-</span>'}</td>
                 <td class="td-muted">${esc(a.keterangan||'-')}</td>
-                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsenGuru('${esc(a.id)}','${esc(a.nama)}','${esc(a.statusMasuk)}')">✏️</button></td>` : ''}
+                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsenGuru('${esc(a.id)}','${esc(a.nama)}','${esc(a.statusMasuk)}','${esc(a.keterangan||'')}')">✏️</button></td>` : ''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -1581,6 +1614,11 @@ async function renderPengaturan() {
             <input id="cfg-pulang-guru" class="form-input" type="time" value="${esc(config.JAM_PULANG_GURU||'15:30')}" />
           </div>
           <div class="form-group">
+            <label class="form-label">Min. Jam Kerja Guru (jam)</label>
+            <input id="cfg-min-kerja-guru" class="form-input" type="number" step="0.5" min="0" max="12" value="${esc(config.MIN_JAM_KERJA_GURU||'4')}" />
+            <div class="form-hint">Guru tidak bisa scan pulang sebelum jam kerja minimum ini terpenuhi</div>
+          </div>
+          <div class="form-group">
             <label class="form-label">Tahun Ajaran</label>
             <input id="cfg-ta" class="form-input" type="text" value="${esc(config.TAHUN_AJARAN||'2026/2027')}" />
           </div>
@@ -1630,6 +1668,7 @@ async function doSaveConfig() {
       JAM_MASUK_GURU:   document.getElementById('cfg-jam-guru').value,
       TOLERANSI_GURU:   document.getElementById('cfg-tol-guru').value,
       JAM_PULANG_GURU:  document.getElementById('cfg-pulang-guru').value,
+      MIN_JAM_KERJA_GURU: document.getElementById('cfg-min-kerja-guru').value,
       TAHUN_AJARAN:     document.getElementById('cfg-ta').value
     };
     const res = await apiPost({ action: 'update_config', updates });
@@ -2314,22 +2353,29 @@ async function doInputForSiswa(tanggal, nis, nama, kelas) {
 }
 
 async function inputAlpaAll(tanggal, kelas) {
-  const sudahNIS = new Set(todayAbsence.siswa.map(a => String(a.nis)));
-  const belum    = allStudents.filter(s => !sudahNIS.has(String(s.nis)) && s.status === 'AKTIF' && (!kelas || s.kelas === kelas));
+  // BUGFIX: pakai absensi tanggal yang SEDANG DILIHAT (bukan todayAbsence) supaya
+  // menandai ALPA untuk tanggal lampau tidak salah data.
+  let belum;
+  try {
+    const res = await apiGet('get_attendance', { tanggal, kelas });
+    const sudahNIS = new Set((res.siswa || []).map(a => String(a.nis)));
+    belum = allStudents.filter(s => !sudahNIS.has(String(s.nis)) && s.status === 'AKTIF' && (!kelas || s.kelas === kelas));
+  } catch { showToast('❌ Gagal memuat data absensi', 'error'); return; }
+
   if (belum.length === 0) { showToast('Semua siswa sudah absen', 'success'); return; }
   if (!confirm(`Tandai ${belum.length} siswa sebagai ALPA untuk tanggal ${tanggal}?`)) return;
 
   showToast('⏳ Menyimpan data alpa...');
-  let success = 0;
-  for (const s of belum) {
-    try {
-      const res = await apiPost({ action: 'add_attendance', tanggal, nis: s.nis, nama: s.nama, kelas: s.kelas, status: 'ALPA', keterangan: 'Input massal' });
-      if (res.success) success++;
-    } catch {}
-  }
-  showToast(`✅ ${success} siswa ditandai ALPA`, 'success');
-  // [FIX-02] Delay 800ms agar Google Sheets selesai commit semua baris
-  setTimeout(() => renderAbsenSiswa(tanggal, kelas), 800);
+  try {
+    // Satu request untuk semua siswa (dulu 1 request per siswa — lambat & rawan
+    // gagal separuh jalan). Backend memanggil SpreadsheetApp.flush() sebelum
+    // membalas, jadi render ulang di bawah sudah membaca data terbaru.
+    const items = belum.map(s => ({ nis: s.nis, nama: s.nama, kelas: s.kelas, status: 'ALPA', keterangan: 'Input massal' }));
+    const res   = await apiPost({ action: 'bulk_add_attendance', tanggal, items });
+    if (res.success) showToast(`✅ ${res.created} siswa ditandai ALPA` + (res.skipped ? `, ${res.skipped} dilewati (sudah ada data)` : ''), 'success');
+    else showToast('❌ ' + res.message, 'error');
+  } catch { showToast('❌ Gagal menyimpan', 'error'); }
+  renderAbsenSiswa(tanggal, kelas);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2414,7 +2460,7 @@ async function doInputForGuru(tanggal, nig, nama) {
 // ══════════════════════════════════════════════════════════════
 // MODALS — EDIT ABSEN
 // ══════════════════════════════════════════════════════════════
-function editAbsen(id, tipe, nama, statusLama) {
+function editAbsen(id, tipe, nama, statusLama, ketLama) {
   showModal(`
   <div class="modal-title">✏️ Edit Absensi — ${esc(nama)}</div>
   <div class="form-group">
@@ -2425,7 +2471,7 @@ function editAbsen(id, tipe, nama, statusLama) {
   </div>
   <div class="form-group">
     <label class="form-label">Keterangan</label>
-    <input id="md-edit-ket" class="form-input" placeholder="opsional" />
+    <input id="md-edit-ket" class="form-input" value="${esc(ketLama||'')}" placeholder="opsional" />
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
@@ -2452,7 +2498,7 @@ async function doEditAbsen(id, tipe) {
   } catch { showToast('❌ Gagal', 'error'); }
 }
 
-function editAbsenGuru(id, nama, statusLama) {
+function editAbsenGuru(id, nama, statusLama, ketLama) {
   showModal(`
   <div class="modal-title">✏️ Edit Absensi Guru — ${esc(nama)}</div>
   <div class="form-group">
@@ -2463,7 +2509,7 @@ function editAbsenGuru(id, nama, statusLama) {
   </div>
   <div class="form-group">
     <label class="form-label">Keterangan</label>
-    <input id="md-edit-guru-ket" class="form-input" placeholder="opsional" />
+    <input id="md-edit-guru-ket" class="form-input" value="${esc(ketLama||'')}" placeholder="opsional" />
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
@@ -2782,6 +2828,29 @@ async function exportDataGuru() {
 // ══════════════════════════════════════════════════════════════
 // UTILS
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// PERBARUI APLIKASI — bersihkan cache versi lama
+// ══════════════════════════════════════════════════════════════
+// Menghapus cache service worker saja. Data login (sessionStorage) dan
+// preferensi tema (localStorage) SENGAJA tidak disentuh agar user tidak
+// perlu login ulang setelah memperbarui.
+async function clearAppCache() {
+  if (!confirm('Perbarui aplikasi ke versi terbaru?\n\nCache akan dibersihkan dan halaman dimuat ulang.\nData absensi dan sesi login TIDAK terhapus.')) return;
+  showToast('⏳ Membersihkan cache...', 'warn');
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) { /* sebagian gagal dibersihkan -> tetap lanjut reload */ }
+  // Reload dengan cache-busting agar browser tidak memakai HTML lama dari cache HTTP
+  location.replace(location.pathname + '?v=' + Date.now());
+}
+
 function showContent(html) { document.getElementById('content').innerHTML = html; }
 function showModal(html) {
   document.getElementById('modal-body').innerHTML = html;
@@ -2799,8 +2868,10 @@ function showToast(msg, type = '') {
 }
 
 function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  // Selalu pakai timezone Asia/Jakarta — jangan bergantung timezone/jam perangkat
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const get = t => parts.find(p => p.type === t).value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 function formatDateLong(d) {
@@ -2900,22 +2971,30 @@ async function apiPostPublic(payload) {
 }
 
 
-function exportToExcel(data, filename) {
+async function exportToExcel(data, filename) {
   if (!data.length) { showToast('Tidak ada data untuk diekspor', 'error'); return; }
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Data');
-  XLSX.writeFile(wb, filename + '.xlsx');
-  showToast('✅ File Excel berhasil diunduh', 'success');
+  try {
+    await loadScript(XLSX_JS_URL);
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+    XLSX.writeFile(wb, filename + '.xlsx');
+    showToast('✅ File Excel berhasil diunduh', 'success');
+  } catch (e) {
+    showToast('❌ Gagal membuat file Excel: ' + e.message, 'error');
+  }
 }
 
 async function readExcel(file) {
+  await loadScript(XLSX_JS_URL);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
-      const wb = XLSX.read(e.target.result, { type: 'binary' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      resolve(XLSX.utils.sheet_to_json(ws, { defval: '', raw: false }));
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_json(ws, { defval: '', raw: false }));
+      } catch (err) { reject(err); }
     };
     reader.onerror = reject;
     reader.readAsBinaryString(file);
@@ -2923,10 +3002,23 @@ async function readExcel(file) {
 }
 </script>
 <script>
-// ── PWA: Register Service Worker ──
+// ── PWA: Register Service Worker + deteksi versi baru ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // Beri tahu user saat ada versi baru yang siap dipakai
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', () => {
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+            showToast('🔄 Versi baru tersedia — klik "Perbarui Aplikasi" di menu kiri', 'warn');
+          }
+        });
+      });
+      // Cek pembaruan tiap kali dashboard dibuka
+      reg.update().catch(() => {});
+    }).catch(() => {});
   });
 }
 
@@ -2955,11 +3047,16 @@ function toggleDashTheme() {
   }
 }
 
-// Dismiss splash after 2s
-window.addEventListener('DOMContentLoaded', () => {
+// Splash hilang begitu app siap (login screen tampil / dashboard siap) — bukan timer tetap.
+// Fallback 4 detik dipasang agar splash tidak pernah tersangkut kalau ada error tak terduga.
+let _splashDismissed = false;
+function dismissSplash() {
+  if (_splashDismissed) return;
+  _splashDismissed = true;
   const splash = document.getElementById('splash-screen');
-  if (splash) setTimeout(() => splash.classList.add('hide'), 2000);
-});
+  if (splash) splash.classList.add('hide');
+}
+setTimeout(dismissSplash, 4000);
 </script>
 </body>
 </html>

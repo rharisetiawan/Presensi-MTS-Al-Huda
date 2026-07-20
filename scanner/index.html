@@ -484,6 +484,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="theme-toggle" onclick="clearAppCache()" id="refresh-btn" title="Perbarui aplikasi ke versi terbaru">🔄</button>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Ganti tema">🌙</button>
       <div class="status-dot" id="conn-dot" title="Status koneksi"></div>
       <div class="header-clock">
@@ -577,6 +578,8 @@ let scanCount       = { hadir: 0, terlambat: 0, pulang: 0, total: 0 }; // [MED-0
 let offlineQueue    = JSON.parse(localStorage.getItem('mts_offline_queue') || '[]');
 let resultTimer     = null;
 let html5QrCode     = null;
+let wakeLock        = null;
+let scanIndex       = { siswa: {}, guru: {} }; // untuk tampilan nama instan sebelum server menjawab
 
 const API = APP_CONFIG.API_URL;
 const COOLDOWN = APP_CONFIG.SCAN_COOLDOWN_MS || 2500;
@@ -634,12 +637,15 @@ window.addEventListener('DOMContentLoaded', () => {
   // 2. Inject footer credit
   const footerEl = document.getElementById('app-footer');
   if (footerEl && APP_CONFIG.FOOTER_CREDIT) {
-    footerEl.innerHTML = APP_CONFIG.FOOTER_CREDIT;
+    // Tampilkan versi agar mudah dicek apakah HP sudah memakai versi terbaru
+    footerEl.innerHTML = APP_CONFIG.FOOTER_CREDIT +
+      ' · <span style="opacity:0.7">v' + (APP_CONFIG.VERSION || '-') + '</span>';
   }
 
   updateClock();
   setInterval(updateClock, 1000);
   checkOfflineQueue();
+  loadScanIndexFromStorage();
 
   // 3. Splash screen — tampilkan selama ~1.8 detik lalu hilang
   const splash = document.getElementById('splash-screen');
@@ -682,10 +688,14 @@ function showSetupScreen() {
   document.getElementById('main-screen').style.display  = 'none';
 }
 
+let scanIndexInterval = null;
 function showMainScreen() {
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('main-screen').style.display  = 'flex';
   startScanner();
+  requestWakeLock();
+  refreshScanIndex();
+  if (!scanIndexInterval) scanIndexInterval = setInterval(refreshScanIndex, 15 * 60 * 1000);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -764,6 +774,54 @@ async function validateToken(token = deviceToken) {
 }
 
 // ══════════════════════════════════════════════════════════
+// INDEKS SCAN LOKAL — tampilan nama instan sebelum server menjawab
+// ══════════════════════════════════════════════════════════
+function loadScanIndexFromStorage() {
+  try {
+    const raw = localStorage.getItem('mts_scan_index');
+    if (raw) scanIndex = JSON.parse(raw);
+  } catch (e) {}
+}
+
+async function refreshScanIndex() {
+  if (!deviceToken) return;
+  try {
+    const res  = await fetch(`${API}?action=get_scan_index&token=${encodeURIComponent(deviceToken)}`);
+    const data = await res.json();
+    if (data.success) {
+      const siswaMap = {}; (data.siswa || []).forEach(s => siswaMap[s.nis] = s);
+      const guruMap  = {}; (data.guru  || []).forEach(g => guruMap[g.nig]  = g);
+      scanIndex = { siswa: siswaMap, guru: guruMap };
+      localStorage.setItem('mts_scan_index', JSON.stringify(scanIndex));
+    }
+  } catch (e) { /* offline -> tetap pakai indeks lama dari localStorage */ }
+}
+
+function lookupScanIndex(qrCode) {
+  if (qrCode.startsWith('MTS-S-')) {
+    const s = scanIndex.siswa[qrCode.replace('MTS-S-', '')];
+    return s ? { nama: s.nama, sub: 'Kelas ' + s.kelas } : null;
+  }
+  const nig = qrCode.replace('MTS-G-', '').replace('MTS-TU-', '');
+  const g = scanIndex.guru[nig];
+  return g ? { nama: g.nama, sub: g.jabatan || 'Guru' } : null;
+}
+
+// ══════════════════════════════════════════════════════════
+// WAKE LOCK — layar tidak mati saat HP dipakai jaga gerbang
+// ══════════════════════════════════════════════════════════
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+  } catch (e) { /* tidak didukung / ditolak browser -> abaikan, bukan fatal */ }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && document.getElementById('main-screen').style.display !== 'none') {
+    requestWakeLock();
+  }
+});
+
+// ══════════════════════════════════════════════════════════
 // QR SCANNER
 // ══════════════════════════════════════════════════════════
 function startScanner() {
@@ -800,6 +858,12 @@ async function onQrSuccess(qrCode) {
 
   // [BUG-03] Safety backstop: pastikan isCooldown selalu di-reset meski ada error tak terduga
   setTimeout(() => { isCooldown = false; }, COOLDOWN + 1500);
+
+  // Tampilkan nama instan dari indeks lokal (tanpa menunggu server) supaya
+  // petugas langsung lihat identitas — status HADIR/TERLAMBAT menyusul begitu
+  // server menjawab (biasanya <1 detik).
+  const preview = lookupScanIndex(qrCode);
+  if (preview) showResult('duplicate', '⏳', preview.nama, preview.sub, 'MEMPROSES...', '', '', true);
 
   try {
     // [BUG-04] Catat waktu scan di sisi client — bukan waktu sync — agar offline scan akurat
@@ -869,7 +933,7 @@ async function onQrSuccess(qrCode) {
 // ══════════════════════════════════════════════════════════
 // RESULT OVERLAY
 // ══════════════════════════════════════════════════════════
-function showResult(type, icon, name, sub, statusLabel, time, msg = '') {
+function showResult(type, icon, name, sub, statusLabel, time, msg = '', silent = false) {
   clearTimeout(resultTimer);
 
   const overlay    = document.getElementById('result-overlay');
@@ -904,8 +968,8 @@ function showResult(type, icon, name, sub, statusLabel, time, msg = '') {
 
   overlay.classList.add('show');
 
-  // Suara
-  if (APP_CONFIG.SOUND_ENABLED) {
+  // Suara (dilewati untuk preview instan supaya tidak bunyi dua kali per scan)
+  if (APP_CONFIG.SOUND_ENABLED && !silent) {
     playBeep(type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'error');
   }
 
@@ -1015,22 +1079,32 @@ async function syncOfflineQueue() {
   offlineQueue = [];
   saveOfflineQueue();
 
-  let success = 0;
+  let success = 0, dropped = 0;
   for (const item of toSync) {
     try {
       const res = await apiPost(item);
-      if (res.success || res.code === 'DUPLICATE') success++;
-      else offlineQueue.push(item); // kembalikan jika gagal
+      if (res.success || res.code === 'DUPLICATE') {
+        success++;
+      } else if (res.code) {
+        // Penolakan permanen (NOT_FOUND/HARI_LIBUR/TOO_EARLY/dst) — waktu scan
+        // sudah tetap (clientTimestamp), jadi mengulang tidak akan pernah
+        // berhasil. Buang dari antrian supaya badge offline tidak macet selamanya.
+        dropped++;
+      } else {
+        offlineQueue.push(item); // tidak ada code -> kemungkinan server sibuk, coba lagi nanti
+      }
     } catch {
-      offlineQueue.push(item);
+      offlineQueue.push(item); // gagal koneksi -> coba lagi nanti
     }
   }
 
   saveOfflineQueue();
   if (success > 0) {
-    showToast('\u2705 ' + success + ' data berhasil disinkronkan');
+    showToast('\u2705 ' + success + ' data disinkronkan' + (dropped ? ', ' + dropped + ' ditolak server' : ''));
     // [FIX-COUNTER] Reload counter dari server setelah sync offline
     setTimeout(loadCounterFromServer, 1000);
+  } else if (dropped > 0) {
+    showToast('\u26a0\ufe0f ' + dropped + ' data offline ditolak server (tidak valid)');
   }
 }
 
@@ -1048,15 +1122,54 @@ function onOffline() {
 // API HELPER
 // ══════════════════════════════════════════════════════════
 async function apiPost(payload) {
-  const res = await fetch(API, {
-    method:   'POST',
-    redirect: 'follow',
-    headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
-    body:     JSON.stringify(payload)
-  });
-  const text = await res.text();
-  try { return JSON.parse(text); }
-  catch { throw new Error('Response bukan JSON'); }
+  // [B13] Timeout eksplisit — jangan sampai fetch menggantung tanpa batas di sinyal jelek
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(API, {
+      method:   'POST',
+      redirect: 'follow',
+      headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+      body:     JSON.stringify(payload),
+      signal:   controller.signal
+    });
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { throw new Error('Response bukan JSON'); }
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// PERBARUI APLIKASI — bersihkan cache versi lama
+// ══════════════════════════════════════════════════════════
+// PENTING: hanya menghapus cache service worker. localStorage SENGAJA tidak
+// disentuh karena berisi token perangkat (mts_device_token) dan antrian scan
+// offline (mts_offline_queue) — menghapusnya berarti HP harus didaftarkan
+// ulang oleh TU dan data absensi yang belum tersinkron akan hilang.
+async function clearAppCache() {
+  if (offlineQueue.length > 0) {
+    const lanjut = confirm('⚠️ Masih ada ' + offlineQueue.length + ' data absensi yang belum tersinkron.\n\n' +
+      'Data ini TIDAK akan terhapus, tapi sebaiknya sambungkan ke internet dulu agar tersinkron.\n\nTetap perbarui aplikasi sekarang?');
+    if (!lanjut) return;
+  } else {
+    if (!confirm('Perbarui scanner ke versi terbaru?\n\nToken perangkat dan data absensi TIDAK terhapus.')) return;
+  }
+
+  showToast('⏳ Membersihkan cache...');
+  try {
+    if (html5QrCode) { try { await html5QrCode.stop(); } catch (e) {} }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) { /* sebagian gagal dibersihkan -> tetap lanjut reload */ }
+  location.replace(location.pathname + '?v=' + Date.now());
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1071,9 +1184,20 @@ function showToast(msg, duration = 3000) {
   toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-// Register Service Worker
+// Register Service Worker + deteksi versi baru
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+          showToast('🔄 Versi baru tersedia — ketuk tombol 🔄 di atas', 6000);
+        }
+      });
+    });
+    reg.update().catch(() => {});
+  }).catch(() => {});
 }
 </script>
 </body>

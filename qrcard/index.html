@@ -252,6 +252,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); colo
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-toggle-qr" onclick="clearAppCache()" title="Perbarui aplikasi ke versi terbaru">🔄</button>
     <button class="theme-toggle-qr" id="qr-theme-btn" onclick="toggleQrTheme()">🌙</button>
     <a href="../dashboard/" class="back-btn">← Dashboard</a>
   </div>
@@ -334,6 +335,17 @@ const API = APP_CONFIG.API_URL;
 let currentData    = [];   // semua data dari server
 let selectedCards  = new Set(); // set of idx yang dipilih untuk print
 let totalVisible   = 0;
+
+// ── XSS protection ──
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
 
 // ── Init ──
 (function initQRCard() {
@@ -427,7 +439,7 @@ function cardHtml(item, idx, tipe, theme, ta) {
   const searchStr = `${name}|${id}|${isSiswa ? item.kelas : ''}`.toLowerCase();
 
   return `
-  <div class="card-wrap-outer" id="wrap-${idx}" data-search="${searchStr}" data-idx="${idx}">
+  <div class="card-wrap-outer" id="wrap-${idx}" data-search="${esc(searchStr)}" data-idx="${idx}">
     <!-- Checkbox select -->
     <div class="card-select-overlay" id="sel-${idx}" onclick="toggleSelect(${idx})" title="Pilih untuk print"></div>
 
@@ -439,16 +451,16 @@ function cardHtml(item, idx, tipe, theme, ta) {
         <div class="card-school-icon">🕌</div>
         <div class="card-school-info">
           <div class="card-school-name">MTS Al Huda Putri Malang</div>
-          <div class="card-year">TA ${ta}</div>
+          <div class="card-year">TA ${esc(ta)}</div>
         </div>
       </div>
       <div class="card-body-row">
         <div class="card-qr"><canvas id="qr-${idx}" width="52" height="52"></canvas></div>
         <div class="card-info">
           <div class="card-type-label">${typeLabel}</div>
-          <div class="card-name">${name}</div>
-          <div class="card-id">${id}</div>
-          <div class="card-class">${sub}</div>
+          <div class="card-name">${esc(name)}</div>
+          <div class="card-id">${esc(id)}</div>
+          <div class="card-class">${esc(sub)}</div>
         </div>
       </div>
       <div class="card-stripe"></div>
@@ -613,22 +625,36 @@ async function generateQR(canvas, qrVal) {
         color: { dark: '#FFFFFF', light: '#00000000' }
       });
       return;
-    } catch(e) {}
+    } catch(e) {
+      console.warn('QRCode.toCanvas gagal:', e);
+    }
   }
-  // Fallback: image API
-  const img  = document.createElement('img');
-  img.src    = 'https://api.qrserver.com/v1/create-qr-code/?size=52x52'
-             + '&data=' + encodeURIComponent(qrVal)
-             + '&bgcolor=000000&color=ffffff&format=png&qzone=1';
-  img.width  = 52; img.height = 52; img.alt = qrVal;
-  img.style.cssText = 'border-radius:4px;display:block;';
-  img.onerror = function() {
-    const span = document.createElement('div');
-    span.style.cssText = 'width:52px;height:52px;font-size:6px;color:#fff;word-break:break-all;padding:2px;line-height:1.2;overflow:hidden';
-    span.textContent = qrVal;
-    canvas.parentNode.replaceChild(span, canvas);
-  };
-  canvas.parentNode.replaceChild(img, canvas);
+
+  // Fallback terakhir: tampilkan teks value QR. Sengaja TIDAK memakai image API
+  // pihak ketiga (mis. qrserver.com) di sini — itu berarti mengirim NIS/NIG
+  // siswa ke server luar, yang tidak sesuai untuk data pribadi anak.
+  const span = document.createElement('div');
+  span.style.cssText = 'width:52px;height:52px;font-size:6px;color:#fff;word-break:break-all;padding:2px;line-height:1.2;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center';
+  span.textContent = qrVal;
+  canvas.parentNode.replaceChild(span, canvas);
+}
+
+// ── Perbarui aplikasi: bersihkan cache service worker versi lama ──
+// Sesi login (sessionStorage) tidak disentuh agar tidak perlu login ulang.
+async function clearAppCache() {
+  if (!confirm('Perbarui aplikasi ke versi terbaru?\n\nCache akan dibersihkan dan halaman dimuat ulang.')) return;
+  showToast('⏳ Membersihkan cache...');
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) { /* sebagian gagal dibersihkan -> tetap lanjut reload */ }
+  location.replace(location.pathname + '?v=' + Date.now());
 }
 
 // ══════════════════════════════════════════════════

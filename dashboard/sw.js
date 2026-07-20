@@ -1,6 +1,7 @@
 // Service Worker — Dashboard Admin — MTS Al Huda Putri
-// [FIX-03] Versi v4: absolute paths, cache buster, tidak intercept API
-const CACHE_NAME = 'mts-dashboard-v4';
+// [FIX-03] Versi v5: absolute paths, cache buster, tidak intercept API
+// Naikkan CACHE_NAME setiap rilis agar perangkat otomatis mengambil versi baru.
+const CACHE_NAME = 'mts-dashboard-v5';
 const ASSETS = [
   '/dashboard/index.html',
   '/assets/js/config.js',
