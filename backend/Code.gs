@@ -131,7 +131,7 @@ function doGet(e) {
     }
 
     switch (action) {
-      case 'login':             return doLogin({ pin: e.parameter.pin });
+      case 'login':             return doLogin({ pin: e.parameter.pin, expectedRole: e.parameter.expectedRole });
       case 'validate_session':  return doValidateSession({ sessionToken });
       case 'get_attendance':    return getAttendance(e.parameter);
       case 'get_students':      return getStudents();
@@ -229,6 +229,17 @@ function doLogin(data) {
     return jsonResponse({ success: false, message: 'PIN salah. Silakan coba lagi.' });
   }
 
+  // [A8] PIN benar tapi untuk role lain dari tab yang dipilih user di layar
+  // login — jangan login diam-diam sebagai role yang tidak diminta, supaya
+  // tab role di frontend tidak menyesatkan (mis. pilih tab Kepsek tapi PIN
+  // yang dimasukkan ternyata PIN TU → seharusnya ditolak, bukan login TU).
+  const expectedRole = data.expectedRole;
+  if (expectedRole && ['TU', 'KEPSEK', 'WALI'].includes(expectedRole) && expectedRole !== role) {
+    _registerLoginFailure();
+    _addAuditLog('LOGIN_GAGAL', 'AUTH', expectedRole, 'PIN valid untuk role lain', 'Unknown', '-');
+    return jsonResponse({ success: false, message: 'PIN benar, tapi bukan untuk role yang dipilih. Silakan pilih tab role yang sesuai.' });
+  }
+
   _clearLoginFailures();
   const token = _generateSessionToken();
   _storeSession(token, role);
@@ -305,14 +316,43 @@ function changePin(data) {
 
   _cacheRemove('cfg_v1');
   _addAuditLog('CHANGE_PIN', pinKey, '***', '***', data._role, data._role);
-  return jsonResponse({ success: true, message: 'PIN berhasil diubah.' });
+
+  // [B6] Cabut semua sesi aktif untuk role ini — tanpa ini, sesi yang sudah
+  // terlanjur login lewat PIN lama tetap valid sampai 10 jam meski PIN-nya
+  // sudah diganti.
+  const affectedRole = pinKey.replace('PIN_', '');
+  _revokeSessionsByRole(affectedRole);
+
+  return jsonResponse({ success: true, message: 'PIN berhasil diubah. Semua sesi aktif untuk role ' + affectedRole + ' telah keluar otomatis.' });
+}
+
+function _revokeSessionsByRole(role) {
+  const props    = PropertiesService.getScriptProperties();
+  const sessions = JSON.parse(props.getProperty('mts_sessions') || '{}');
+  for (const token in sessions) {
+    if (sessions[token].role === role) delete sessions[token];
+  }
+  props.setProperty('mts_sessions', JSON.stringify(sessions));
+}
+
+// [B4] Utilities.getUuid() memakai RNG kriptografis sisi server — Math.random()
+// bisa diprediksi dan tidak aman dipakai untuk token sesi/perangkat.
+function _randomTokenChars(length, chars) {
+  let hex = '';
+  while (hex.length < length * 2) {
+    hex += Utilities.getUuid().replace(/-/g, '');
+  }
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    const byteVal = parseInt(hex.substr(i * 2, 2), 16);
+    result += chars.charAt(byteVal % chars.length);
+  }
+  return result;
 }
 
 function _generateSessionToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let t = 'ses_';
-  for (let i = 0; i < 32; i++) t += chars.charAt(Math.floor(Math.random() * chars.length));
-  return t;
+  return 'ses_' + _randomTokenChars(32, chars);
 }
 
 function _storeSession(token, role) {
@@ -420,12 +460,8 @@ function registerDevice(data) {
 
 function _generateDeviceToken() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let r = 'MTS-';
-  for (let i = 0; i < 12; i++) {
-    if (i === 4 || i === 8) r += '-';
-    r += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return r;
+  const raw   = _randomTokenChars(12, chars);
+  return 'MTS-' + raw.substr(0, 4) + '-' + raw.substr(4, 4) + '-' + raw.substr(8, 4);
 }
 
 function getDevices(params) {
@@ -1117,7 +1153,11 @@ function getReport(params) {
     const nis = String(rowsSiswa[i][0]);
     if (!nis) continue;
     if (kelas && rowsSiswa[i][2] !== kelas) continue;
-    if (rowsSiswa[i][6] === 'NONAKTIF') continue;
+    // [A6] Sebelumnya cuma buang NONAKTIF — siswa LULUS/PINDAH/DO masih
+    // muncul di rekap bulanan dengan 0 kehadiran. Pakai _isSiswaAktifForScan
+    // yang sudah dipakai konsisten di getStats, supaya definisi "aktif"
+    // sama di semua tempat.
+    if (!_isSiswaAktifForScan(rowsSiswa[i][6])) continue;
     report[nis] = { nis, nama: rowsSiswa[i][1], kelas: rowsSiswa[i][2], status: rowsSiswa[i][6] || 'AKTIF', hadir: 0, terlambat: 0, izin: 0, sakit: 0, alpa: 0 };
   }
 
@@ -1190,7 +1230,8 @@ function getSummaryWali(params) {
   for (let i = 1; i < rowsSiswa.length; i++) {
     if (!rowsSiswa[i][0]) continue;
     if (kelas && rowsSiswa[i][2] !== kelas) continue;
-    if (rowsSiswa[i][6] === 'NONAKTIF') continue;
+    // [A6] Sama seperti getReport — LULUS/PINDAH/DO tidak boleh muncul di rekap.
+    if (!_isSiswaAktifForScan(rowsSiswa[i][6])) continue;
     siswaList.push({ nis: String(rowsSiswa[i][0]), nama: rowsSiswa[i][1], kelas: rowsSiswa[i][2] });
   }
 

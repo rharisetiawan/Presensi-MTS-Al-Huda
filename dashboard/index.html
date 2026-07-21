@@ -75,18 +75,6 @@ body.light-mode .login-box { background: #ffffff; border: 1px solid rgba(0,0,0,0
 }
 .theme-toggle-btn:hover { background: var(--surface3); }
 
-/* ── RESPONSIVE MOBILE ──────────────────────────────────── */
-@media (max-width: 480px) {
-  .page-header { padding: 16px; }
-  .page-title { font-size: 18px; }
-  .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .action-bar { flex-wrap: wrap; gap: 8px; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { min-width: 500px; }
-  .role-grid { grid-template-columns: 1fr !important; }
-  .controls-grid { grid-template-columns: 1fr !important; }
-}
-
 /* ── APP FOOTER ─────────────────────────────────────────── */
 .dashboard-footer {
   text-align: center; padding: 10px;
@@ -149,6 +137,13 @@ html, body { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; backgro
 
 /* ── STAT GRID ── */
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+/* [C1] Varian jumlah kolom dulu ditulis lewat inline style di HTML
+   (style="grid-template-columns:repeat(N,1fr)"), yang mengalahkan media
+   query responsif di rentang lebar tertentu (inline style menang atas
+   aturan stylesheet biasa, hanya kalah dari !important). Ganti jadi class
+   supaya breakpoint di bawah benar-benar berlaku di semua ukuran layar. */
+.stat-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
 .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 16px; transition: transform 0.2s, box-shadow 0.2s; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
@@ -217,7 +212,9 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
 .filter-input { flex: 1; min-width: 180px; }
 
 /* ── MODAL ── */
-.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+/* [C4] padding di overlay (bukan margin di .modal) supaya modal tidak
+   pernah menempel ke tepi layar di HP kecil, tanpa perlu breakpoint khusus. */
+.modal-overlay { position: fixed; inset: 0; z-index: 200; padding: 16px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 .modal-overlay.show { opacity: 1; pointer-events: all; }
 .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; transform: scale(0.95) translateY(10px); transition: transform 0.3s; }
 .modal-overlay.show .modal { transform: scale(1) translateY(0); }
@@ -265,35 +262,75 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
 .audit-action { font-family: monospace; font-size: 11px; background: var(--surface2); padding: 2px 8px; border-radius: 4px; }
 
 /* ── RESPONSIVE ──────────────────────────────────────────── */
-@media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .two-col { grid-template-columns: 1fr; } }
+/* [C1/C2] Sebelumnya ada DUA blok @media (max-width:480px) terpisah dengan
+   aturan .stat-grid yang saling bertentangan (repeat(2,1fr) !important vs
+   1fr biasa) — yang !important selalu menang sehingga aturan lainnya jadi
+   kode mati. Digabung jadi satu blok per breakpoint di bawah ini, dan
+   .stat-grid-3/.stat-grid-4 (lihat definisi class di atas) diikutkan supaya
+   grid statistik dengan jumlah kolom berbeda ikut menyesuaikan juga. */
+@media (max-width: 1024px) {
+  .stat-grid, .stat-grid-3, .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
 @media (max-width: 768px) {
   .sidebar { position: fixed; top: var(--header-h); left: 0; bottom: 0; z-index: 100; transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
   .header-menu-btn { display: flex; }
-  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .stat-grid, .stat-grid-3, .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .content { padding: 16px; }
   .header-date { display: none; }
   .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .action-bar { flex-wrap: wrap; }
+  .action-bar { flex-wrap: wrap; gap: 8px; }
   .btn { padding: 8px 12px; font-size: 13px; }
   .table-wrap, .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { min-width: 480px; }
-  .modal-inner { margin: 8px; border-radius: 14px; max-height: 92vh; }
+  /* [C4] Selector aslinya ".modal-inner" — class itu tidak pernah ada di
+     markup (nama sebenarnya ".modal"), jadi aturan ini tidak pernah berlaku. */
+  .modal { border-radius: 14px; max-height: 92vh; }
 }
 @media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr; }
+  .page-header { padding: 16px; }
+  .stat-grid, .stat-grid-3, .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .header-logo-text { font-size: 13px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .page-title { font-size: 18px; }
   .page-sub { font-size: 12px; }
   .content { padding: 12px; }
-  .role-grid { grid-template-columns: 1fr !important; }
-  .controls-grid { grid-template-columns: 1fr !important; }
+  .role-grid { grid-template-columns: 1fr; }
+  .controls-grid { grid-template-columns: 1fr; }
   .panduan-tabs { gap: 4px; }
   .panduan-tab { padding: 6px 10px; font-size: 12px; }
   .login-box { padding: 24px 20px; margin: 16px; }
   .login-role-tabs { flex-wrap: wrap; }
   .stat-card { padding: 14px; }
-  .stat-val { font-size: 28px; }
+  .modal { padding: 20px; }
+}
+
+/* [C3] Dashboard tidak punya aturan @media print sama sekali — tombol
+   "Print" di Rekap Wali Kelas (window.print()) mencetak apa adanya:
+   sidebar, header, latar gelap, dan #app/.content yang overflow:hidden
+   (dipotong ke tinggi layar, bukan tinggi konten sebenarnya). Blok di
+   bawah membuat hasil cetak berupa tabel bersih hitam-di-atas-putih. */
+@media print {
+  html, body, #app, .app-body, .content { height: auto !important; overflow: visible !important; }
+  .app-header, .sidebar, .filter-bar, .page-sub, #dash-toast, .modal-overlay,
+  .btn, .nav-item, .header-right { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .content { padding: 0 !important; }
+  .page-title { color: #000 !important; }
+  .card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; color: #000 !important; }
+  .card-header { border-color: #ccc !important; }
+  .table-wrap { overflow: visible !important; }
+  table, .wali-table td, .wali-table th { color: #000 !important; }
+  thead th, .wali-table th {
+    background: #eee !important; color: #000 !important; border: 1px solid #999 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .wali-table td { border: 1px solid #999 !important; }
+  .wali-H, .wali-T, .wali-I, .wali-S, .wali-A {
+    -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+  }
+  .alert-box { border: 1px solid #ccc !important; background: #f5f5f5 !important; color: #000 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 </style>
 </head>
@@ -311,7 +348,7 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
   <div class="login-box">
     <img src="../assets/icons/logo-mts.png" alt="Logo MTS" style="width:70px;height:70px;object-fit:contain;margin-bottom:8px" />
     <div class="login-title">Dashboard Admin</div>
-    <div class="login-sub">MTS Al Huda Putri Malang — Sistem Presensi v2.1</div>
+    <div class="login-sub" id="login-sub-version">MTS Al Huda Putri Malang — Sistem Presensi v2.1</div>
     <div class="login-role-tabs">
       <button class="role-tab active" onclick="selectRole('TU',this)">🏢 TU</button>
       <button class="role-tab" onclick="selectRole('KEPSEK',this)">👔 Kepala Sekolah</button>
@@ -453,6 +490,22 @@ function esc(str) {
     .replace(/'/g, '&#x27;');
 }
 
+// [A3] esc() saja TIDAK cukup untuk nilai yang disisipkan ke dalam string JS
+// literal di dalam atribut onclick="...('...')". Browser men-decode HTML
+// entity (mis. &#x27; → ') SEBELUM menyerahkan isi atribut ke parser JS,
+// jadi nama seperti "Aisyah D'Rahman" tetap memecah string literal dan
+// mematikan tombol. escAttr() meng-escape dulu untuk level string-JS
+// (backslash & kutip tunggal), baru di-escape lagi untuk level atribut HTML.
+function escJs(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
+}
+function escAttr(str) { return esc(escJs(str)); }
+
 // ══════════════════════════════════════════════════════════════
 // AUTH — SERVER SIDE
 // ══════════════════════════════════════════════════════════════
@@ -491,7 +544,7 @@ async function doLogin() {
   err.textContent = '';
 
   try {
-    const res = await apiPostPublic({ action: 'login', pin });
+    const res = await apiPostPublic({ action: 'login', pin, expectedRole: selectedRole });
     if (res.success) {
       SESSION_TOKEN = res.token;
       USER_ROLE     = res.role;
@@ -535,6 +588,9 @@ window.addEventListener('DOMContentLoaded', () => {
   if (verSidebar) verSidebar.textContent = 'Versi ' + ver;
   const verLogin = document.querySelector('.login-version');
   if (verLogin) verLogin.textContent = 'v' + ver + ' · Autentikasi Server-Side Aman';
+  // [C6] .login-sub sebelumnya hardcode "v2.1" terpisah dari sumber di atas.
+  const verLoginSub = document.getElementById('login-sub-version');
+  if (verLoginSub) verLoginSub.textContent = 'MTS Al Huda Putri Malang — Sistem Presensi v' + ver;
 
   if (SESSION_TOKEN && USER_ROLE) {
     // Validasi session yang tersimpan — timeout 8 detik
@@ -729,7 +785,7 @@ async function renderHome() {
     </div>
 
     ${(s.izin > 0 || s.sakit > 0 || s.alpa > 0) ? `
-    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+    <div class="stat-grid stat-grid-3">
       <div class="stat-card blue-card"><div class="stat-icon">📋</div><div class="stat-body"><div class="stat-num">${s.izin}</div><div class="stat-label">Siswa Izin</div></div></div>
       <div class="stat-card purple-card"><div class="stat-icon">🏥</div><div class="stat-body"><div class="stat-num">${s.sakit}</div><div class="stat-label">Siswa Sakit</div></div></div>
       <div class="stat-card red-card"><div class="stat-icon">❌</div><div class="stat-body"><div class="stat-num">${s.alpa}</div><div class="stat-label">Siswa Alpa</div></div></div>
@@ -847,7 +903,7 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
       ${canEdit ? `<button class="btn btn-primary" onclick="showInputManualSiswa(document.getElementById('filter-tgl-siswa').value)">+ Input Manual</button>
       <button class="btn btn-secondary" onclick="exportAbsenSiswa()">⬇ Export</button>` : ''}
     </div>
-    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="stat-grid stat-grid-4">
       ${statMiniCard('✅','Hadir',data.filter(a=>a.status==='HADIR').length,'green')}
       ${statMiniCard('⚠️','Terlambat',data.filter(a=>a.status==='TERLAMBAT').length,'yellow')}
       ${statMiniCard('📋','Izin',data.filter(a=>a.status==='IZIN').length,'blue')}
@@ -860,10 +916,15 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>NIS</th><th>Nama Siswa</th><th>Kelas</th><th>Jam Masuk</th><th>Status</th><th>Keterangan</th>${canEdit?'<th>Aksi</th>':''}</tr></thead>
+          <thead><tr><th>#</th><th>NIS</th><th>Nama Siswa</th><th>Kelas</th><th>Jam Masuk</th><th>Status</th><th>Keterangan</th><th>Aksi</th></tr></thead>
           <tbody>
             ${data.length === 0 ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Belum ada data absensi</div></div></td></tr>` :
-              data.map((a,i) => `
+              data.map((a,i) => {
+                const needsWa  = ['ALPA','IZIN','SAKIT'].includes(a.status);
+                const student  = allStudents.find(s => String(s.nis) === String(a.nis));
+                const waBtn    = needsWa ? waBtnStatus(a.nama, a.kelas, student && student.noHpOrtu, a.status, tanggal) : '';
+                const editBtn  = canEdit ? `<button class="btn btn-secondary btn-sm" onclick="editAbsen('${escAttr(a.id)}','siswa','${escAttr(a.nama)}','${escAttr(a.status)}','${escAttr(a.keterangan||'')}','${escAttr(tanggal)}')">✏️ Edit</button>` : '';
+                return `
               <tr>
                 <td class="td-muted">${i+1}</td>
                 <td class="td-muted">${esc(a.nis)}</td>
@@ -872,17 +933,18 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
                 <td>${esc(a.jamMasuk||'-')}</td>
                 <td>${badgeHtml(a.status)}</td>
                 <td class="td-muted">${esc(a.keterangan||'-')}</td>
-                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsen('${esc(a.id)}','siswa','${esc(a.nama)}','${esc(a.status)}','${esc(a.keterangan||'')}')">✏️ Edit</button></td>` : ''}
-              </tr>`).join('')}
+                <td style="white-space:nowrap">${editBtn} ${waBtn}</td>
+              </tr>`;
+              }).join('')}
           </tbody>
         </table>
       </div>
     </div>
-    ${belum.length > 0 && canEdit ? `
+    ${belum.length > 0 ? `
     <div class="card">
       <div class="card-header">
         <div class="card-title" style="color:var(--danger)">🚫 Belum Absen (${belum.length} siswa)</div>
-        <button class="btn btn-warn btn-sm" onclick="inputAlpaAll('${tanggal}','${kelas}')">Tandai Semua Alpa</button>
+        ${canEdit ? `<button class="btn btn-warn btn-sm" onclick="inputAlpaAll('${tanggal}','${kelas}')">Tandai Semua Alpa</button>` : ''}
       </div>
       <div class="table-wrap">
         <table>
@@ -894,7 +956,10 @@ async function renderAbsenSiswa(tanggal = todayStr(), kelas = '') {
               <td class="td-muted">${esc(s.nis)}</td>
               <td class="td-name">${esc(s.nama)}</td>
               <td>Kelas ${esc(s.kelas)}</td>
-              <td><button class="btn btn-warn btn-sm" onclick="showInputManualSiswaFor('${tanggal}','${esc(s.nis)}','${esc(s.nama)}','${esc(s.kelas)}')">Input Status</button></td>
+              <td style="white-space:nowrap">
+                ${canEdit ? `<button class="btn btn-warn btn-sm" onclick="showInputManualSiswaFor('${escAttr(tanggal)}','${escAttr(s.nis)}','${escAttr(s.nama)}','${escAttr(s.kelas)}')">Input Status</button>` : ''}
+                ${waBtnBelumAbsen(s, tanggal)}
+              </td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -929,7 +994,7 @@ async function renderAbsenGuru(tanggal = todayStr()) {
       ${canEdit ? `<button class="btn btn-primary" onclick="showInputManualGuru(document.getElementById('filter-tgl-guru').value)">+ Input Manual</button>
       <button class="btn btn-secondary" onclick="exportAbsenGuru()">⬇ Export</button>` : ''}
     </div>
-    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="stat-grid stat-grid-4">
       ${statMiniCard('✅','Hadir',data.filter(a=>a.statusMasuk==='HADIR').length,'green')}
       ${statMiniCard('⚠️','Terlambat',data.filter(a=>a.statusMasuk==='TERLAMBAT').length,'yellow')}
       ${statMiniCard('🏠','Sudah Pulang',data.filter(a=>a.jamPulang).length,'blue')}
@@ -956,7 +1021,7 @@ async function renderAbsenGuru(tanggal = todayStr()) {
                 <td>${esc(a.jamPulang||'-')}</td>
                 <td>${a.statusPulang ? badgeHtml(a.statusPulang,'pulang') : '<span style="color:var(--text-muted)">-</span>'}</td>
                 <td class="td-muted">${esc(a.keterangan||'-')}</td>
-                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsenGuru('${esc(a.id)}','${esc(a.nama)}','${esc(a.statusMasuk)}','${esc(a.keterangan||'')}')">✏️</button></td>` : ''}
+                ${canEdit ? `<td><button class="btn btn-secondary btn-sm" onclick="editAbsenGuru('${escAttr(a.id)}','${escAttr(a.nama)}','${escAttr(a.statusMasuk)}','${escAttr(a.keterangan||'')}','${escAttr(tanggal)}')">✏️</button></td>` : ''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -974,7 +1039,7 @@ async function renderAbsenGuru(tanggal = todayStr()) {
               <td class="td-muted">${esc(t.nig)}</td>
               <td class="td-name">${esc(t.nama)}</td>
               <td class="td-muted">${esc(t.jabatan||'-')}</td>
-              <td><button class="btn btn-warn btn-sm" onclick="showInputManualGuruFor('${tanggal}','${esc(t.nig)}','${esc(t.nama)}')">Input Status</button></td>
+              <td><button class="btn btn-warn btn-sm" onclick="showInputManualGuruFor('${tanggal}','${escAttr(t.nig)}','${escAttr(t.nama)}')">Input Status</button></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1301,9 +1366,9 @@ function renderDataSiswa(search = '') {
             <td class="td-muted">${esc(s.noHpOrtu||'-')}</td>
             <td>${statusSiswaBadge(s.status)}</td>
             ${canEdit ? `<td style="white-space:nowrap">
-              <button class="btn btn-secondary btn-sm" onclick="showEditSiswa('${esc(s.nis)}')">✏️</button>
-              <button class="btn btn-info btn-sm" onclick="showArchiveSiswa('${esc(s.nis)}','${esc(s.nama)}','${esc(s.status)}')">📁</button>
-              <button class="btn btn-danger btn-sm" onclick="hapusSiswa('${esc(s.nis)}','${esc(s.nama)}')">🗑️</button>
+              <button class="btn btn-secondary btn-sm" onclick="showEditSiswa('${escAttr(s.nis)}')">✏️</button>
+              <button class="btn btn-info btn-sm" onclick="showArchiveSiswa('${escAttr(s.nis)}','${escAttr(s.nama)}','${escAttr(s.status)}')">📁</button>
+              <button class="btn btn-danger btn-sm" onclick="hapusSiswa('${escAttr(s.nis)}','${escAttr(s.nama)}')">🗑️</button>
             </td>` : ''}
           </tr>`).join('')}
         </tbody>
@@ -1350,8 +1415,8 @@ function renderDataGuru(search = '') {
               <td class="td-muted">${esc(t.jenisKelamin||'-')}</td>
               <td class="td-muted">${esc(t.tipe||'Guru')}</td>
               ${canEdit ? `<td style="white-space:nowrap">
-                <button class="btn btn-secondary btn-sm" onclick="showEditGuru('${esc(t.nig)}')">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="hapusGuru('${esc(t.nig)}','${esc(t.nama)}')">🗑️</button>
+                <button class="btn btn-secondary btn-sm" onclick="showEditGuru('${escAttr(t.nig)}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="hapusGuru('${escAttr(t.nig)}','${escAttr(t.nama)}')">🗑️</button>
               </td>` : ''}
             </tr>`).join('')}
         </tbody>
@@ -1412,7 +1477,7 @@ async function renderHariLibur() {
                   <td style="font-weight:600">${esc(hl.tanggal)}</td>
                   <td class="td-muted">${hari}</td>
                   <td>${esc(hl.keterangan)}</td>
-                  ${canEdit ? `<td><button class="btn btn-danger btn-sm" onclick="doDeleteHariLibur('${esc(hl.id)}','${esc(hl.tanggal)}')">🗑️ Hapus</button></td>` : ''}
+                  ${canEdit ? `<td><button class="btn btn-danger btn-sm" onclick="doDeleteHariLibur('${escAttr(hl.id)}','${escAttr(hl.tanggal)}')">🗑️ Hapus</button></td>` : ''}
                 </tr>`;
               }).join('')}
           </tbody>
@@ -1516,7 +1581,7 @@ async function renderPerangkat() {
                 <td class="td-muted">${esc(d.location)}</td>
                 <td class="td-muted">${esc(d.registered)}</td>
                 <td>${d.status==='AKTIF' ? '<span class="badge badge-hadir">AKTIF</span>' : '<span class="badge badge-nonaktif">NONAKTIF</span>'}</td>
-                ${canEdit && d.status==='AKTIF' ? `<td><button class="btn btn-danger btn-sm" onclick="doNonaktifDevice('${esc(d.token)}')">🚫 Nonaktifkan</button></td>` : canEdit ? '<td>-</td>' : ''}
+                ${canEdit && d.status==='AKTIF' ? `<td><button class="btn btn-danger btn-sm" onclick="doNonaktifDevice('${escAttr(d.token)}')">🚫 Nonaktifkan</button></td>` : canEdit ? '<td>-</td>' : ''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -1685,8 +1750,17 @@ async function doSavePIN(pinKey, inputId) {
   try {
     const res = await apiPost({ action: 'change_pin', pinKey, newPin });
     if (res.success) {
-      showToast('✅ PIN berhasil diubah', 'success');
       document.getElementById(inputId).value = '';
+      // [B6] Server mencabut semua sesi untuk role ini setelah PIN diganti —
+      // kalau TU baru saja mengganti PIN-nya sendiri, sesi saat ini pun sudah
+      // tidak valid lagi. Paksa login ulang alih-alih membiarkan UI tampak
+      // normal padahal panggilan API berikutnya akan gagal UNAUTHORIZED.
+      if (pinKey === 'PIN_' + USER_ROLE) {
+        showToast('✅ PIN berhasil diubah. Silakan login ulang.', 'success');
+        setTimeout(() => { sessionStorage.clear(); location.reload(); }, 1500);
+      } else {
+        showToast('✅ PIN berhasil diubah', 'success');
+      }
     } else showToast('❌ ' + res.message, 'error');
   } catch { showToast('❌ Gagal mengubah PIN', 'error'); }
 }
@@ -1741,7 +1815,7 @@ function renderPanduan() {
 
   <div class="page-header">
     <div class="page-title">📖 Panduan Admin — MTS Al Huda Putri</div>
-    <div class="page-sub">Panduan lengkap khusus Admin Utama (TU) · Sistem Presensi v2.0</div>
+    <div class="page-sub">Panduan lengkap khusus Admin Utama (TU) · Sistem Presensi v${esc(APP_CONFIG.VERSION || '2.1.0')}</div>
   </div>
 
   <div style="${noteStyle}">
@@ -2334,7 +2408,7 @@ function showInputManualSiswaFor(tanggal, nis, nama, kelas) {
   <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-for" class="form-input" placeholder="opsional" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doInputForSiswa('${tanggal}','${esc(nis)}','${esc(nama)}','${esc(kelas)}')">Simpan</button>
+    <button class="btn btn-primary" onclick="doInputForSiswa('${tanggal}','${escAttr(nis)}','${escAttr(nama)}','${escAttr(kelas)}')">Simpan</button>
   </div>`);
 }
 
@@ -2440,7 +2514,7 @@ function showInputManualGuruFor(tanggal, nig, nama) {
   <div class="form-group"><label class="form-label">Keterangan</label><input id="md-ket-guru-for" class="form-input" placeholder="opsional" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doInputForGuru('${tanggal}','${esc(nig)}','${esc(nama)}')">Simpan</button>
+    <button class="btn btn-primary" onclick="doInputForGuru('${tanggal}','${escAttr(nig)}','${escAttr(nama)}')">Simpan</button>
   </div>`);
 }
 
@@ -2460,7 +2534,7 @@ async function doInputForGuru(tanggal, nig, nama) {
 // ══════════════════════════════════════════════════════════════
 // MODALS — EDIT ABSEN
 // ══════════════════════════════════════════════════════════════
-function editAbsen(id, tipe, nama, statusLama, ketLama) {
+function editAbsen(id, tipe, nama, statusLama, ketLama, tanggal) {
   showModal(`
   <div class="modal-title">✏️ Edit Absensi — ${esc(nama)}</div>
   <div class="form-group">
@@ -2475,11 +2549,11 @@ function editAbsen(id, tipe, nama, statusLama, ketLama) {
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doEditAbsen('${esc(id)}','${tipe}')">Simpan</button>
+    <button class="btn btn-primary" onclick="doEditAbsen('${escAttr(id)}','${tipe}','${escAttr(tanggal)}')">Simpan</button>
   </div>`);
 }
 
-async function doEditAbsen(id, tipe) {
+async function doEditAbsen(id, tipe, tanggal) {
   const status = document.getElementById('md-edit-status').value;
   const ket    = document.getElementById('md-edit-ket').value;
   try {
@@ -2488,9 +2562,10 @@ async function doEditAbsen(id, tipe) {
       closeModal();
       showToast('✅ Data absensi diperbarui', 'success');
       // [FIX-02] Delay 800ms + [FIX-06] refresh global todayAbsence agar Beranda ikut update
+      // [A7] Kembali ke tanggal yang sedang diedit, bukan default hari ini.
       setTimeout(async () => {
-        if (tipe === 'siswa') { renderAbsenSiswa(); }
-        else { renderAbsenGuru(); }
+        if (tipe === 'siswa') { renderAbsenSiswa(tanggal); }
+        else { renderAbsenGuru(tanggal); }
         const fresh = await apiGet('get_attendance', { tanggal: todayStr() });
         todayAbsence = { siswa: fresh.siswa || [], guru: fresh.guru || [] };
       }, 800);
@@ -2498,7 +2573,7 @@ async function doEditAbsen(id, tipe) {
   } catch { showToast('❌ Gagal', 'error'); }
 }
 
-function editAbsenGuru(id, nama, statusLama, ketLama) {
+function editAbsenGuru(id, nama, statusLama, ketLama, tanggal) {
   showModal(`
   <div class="modal-title">✏️ Edit Absensi Guru — ${esc(nama)}</div>
   <div class="form-group">
@@ -2513,11 +2588,11 @@ function editAbsenGuru(id, nama, statusLama, ketLama) {
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="doEditAbsenGuru('${esc(id)}')">Simpan</button>
+    <button class="btn btn-primary" onclick="doEditAbsenGuru('${escAttr(id)}','${escAttr(tanggal)}')">Simpan</button>
   </div>`);
 }
 
-async function doEditAbsenGuru(id) {
+async function doEditAbsenGuru(id, tanggal) {
   const statusMasuk = document.getElementById('md-edit-guru-status').value;
   const ket         = document.getElementById('md-edit-guru-ket').value;
   try {
@@ -2527,7 +2602,7 @@ async function doEditAbsenGuru(id) {
       showToast('✅ Data absensi guru diperbarui', 'success');
       // [FIX-02] Delay 800ms + [FIX-06] refresh global todayAbsence agar Beranda ikut update
       setTimeout(async () => {
-        renderAbsenGuru();
+        renderAbsenGuru(tanggal);
         const fresh = await apiGet('get_attendance', { tanggal: todayStr() });
         todayAbsence = { siswa: fresh.siswa || [], guru: fresh.guru || [] };
       }, 800);
@@ -2570,7 +2645,7 @@ function _formSiswaHtml(title, nis, nama, kelas, jk, namaOrtu, noHp, onSubmit, d
     <input id="md-hp" class="form-input" value="${esc(noHp)}" placeholder="cth: 08123456789" /></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="${onSubmit}('${esc(nis)}')">Simpan</button>
+    <button class="btn btn-primary" onclick="${onSubmit}('${escAttr(nis)}')">Simpan</button>
   </div>`;
 }
 
@@ -2630,7 +2705,7 @@ function showArchiveSiswa(nis, nama, statusSaat) {
   </div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-warn" onclick="doArchiveSiswa('${esc(nis)}')">Simpan Status</button>
+    <button class="btn btn-warn" onclick="doArchiveSiswa('${escAttr(nis)}')">Simpan Status</button>
   </div>`);
 }
 
@@ -2693,7 +2768,7 @@ function _formGuruHtml(title, nig, nama, jabatan, mapel, jk, tipe, onSubmit, dis
     </select></div>
   <div class="form-actions">
     <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
-    <button class="btn btn-primary" onclick="${onSubmit}('${esc(nig)}')">Simpan</button>
+    <button class="btn btn-primary" onclick="${onSubmit}('${escAttr(nig)}')">Simpan</button>
   </div>`;
 }
 
@@ -2901,6 +2976,35 @@ function statusSiswaBadge(status) {
   return `<span class="badge ${map[status]||'badge-belum'}">${esc(status||'AKTIF')}</span>`;
 }
 
+// ══════════════════════════════════════════════════════════════
+// [F1] NOTIFIKASI WHATSAPP KE ORANG TUA
+// ══════════════════════════════════════════════════════════════
+// Sistem sudah mengumpulkan noHpOrtu untuk tiap siswa tapi sebelumnya tidak
+// pernah dipakai. wa.me membuka WhatsApp dengan pesan yang sudah diisi —
+// TU/Wali Kelas tinggal menekan kirim, tidak perlu biaya API tambahan.
+function waLink(noHp, message) {
+  if (!noHp) return null;
+  let phone = String(noHp).replace(/\D/g, '');
+  if (!phone) return null;
+  if (phone.startsWith('0')) phone = '62' + phone.slice(1);
+  else if (!phone.startsWith('62')) phone = '62' + phone;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+function waBtnBelumAbsen(s, tanggal) {
+  const link = waLink(s.noHpOrtu,
+    `Assalamu'alaikum, kami informasikan dari MTS Al Huda Putri Malang bahwa pada hari ini (${formatDateLong(new Date(tanggal + 'T00:00'))}) ananda ${s.nama} (Kelas ${s.kelas}) belum tercatat hadir di sekolah. Mohon konfirmasinya, terima kasih.`);
+  return link
+    ? `<a class="btn btn-primary btn-sm" href="${esc(link)}" target="_blank" rel="noopener">💬 WA</a>`
+    : `<span class="td-muted" style="font-size:11px">No HP kosong</span>`;
+}
+
+function waBtnStatus(nama, kelas, noHp, statusLabel, tanggal) {
+  const link = waLink(noHp,
+    `Assalamu'alaikum, kami informasikan dari MTS Al Huda Putri Malang bahwa ananda ${nama} (Kelas ${kelas}) tercatat *${statusLabel}* pada ${formatDateLong(new Date(tanggal + 'T00:00'))}. Mohon konfirmasinya, terima kasih.`);
+  return link ? `<a class="btn btn-info btn-sm" href="${esc(link)}" target="_blank" rel="noopener">💬 WA</a>` : '';
+}
+
 function statMiniCard(icon, label, value, color) {
   return `<div class="stat-card ${color}-card">
     <div class="stat-icon">${icon}</div>
@@ -3045,6 +3149,10 @@ function toggleDashTheme() {
     document.getElementById('dash-theme-btn').textContent = '🌙';
     localStorage.setItem('mts_theme', 'dark');
   }
+  // [C5] Chart di Beranda sudah pilih warna sesuai tema saat DIBUAT, tapi
+  // tidak otomatis render ulang saat tema diganti sambil masih di halaman
+  // itu — render ulang Beranda supaya chart ikut ganti warna seketika.
+  if (currentPage === 'home') renderHome();
 }
 
 // Splash hilang begitu app siap (login screen tampil / dashboard siap) — bukan timer tetap.

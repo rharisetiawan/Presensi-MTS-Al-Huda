@@ -481,6 +481,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="theme-toggle" onclick="showManualInput()" id="manual-btn" title="Input manual NIS/NIG">⌨️</button>
       <button class="theme-toggle" onclick="clearAppCache()" id="refresh-btn" title="Perbarui aplikasi ke versi terbaru">🔄</button>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Ganti tema">🌙</button>
       <div class="status-dot" id="conn-dot" title="Status koneksi"></div>
@@ -557,6 +558,32 @@
     <div class="result-msg" id="result-msg"></div>
     <div class="result-progress">
       <div class="result-progress-bar" id="result-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║  [F3] INPUT MANUAL NIS/NIG        ║ -->
+<!-- ║  Untuk kartu QR hilang/rusak —    ║ -->
+<!-- ║  sebelumnya tidak ada jalan lain  ║ -->
+<!-- ║  di lapangan selain kartu fisik.  ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<div id="manual-overlay" style="position:fixed;inset:0;z-index:150;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeManualInput()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">
+    <div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px;">⌨️ Input Manual</div>
+      <div style="font-size:12px;color:var(--text-muted);">Untuk kartu QR yang hilang atau rusak — masukkan nomor induk langsung.</div>
+    </div>
+    <div class="setup-label">Tipe</div>
+    <select id="manual-tipe" class="setup-input">
+      <option value="S">🎓 Siswa (NIS)</option>
+      <option value="G">👨‍🏫 Guru/Tendik (NIG)</option>
+    </select>
+    <div class="setup-label">Nomor Induk</div>
+    <input id="manual-id" class="setup-input" type="text" inputmode="numeric" autocomplete="off" placeholder="cth: 2026001" onkeyup="if(event.key==='Enter') submitManualScan()" />
+    <div style="display:flex;gap:10px;">
+      <button class="setup-btn secondary" style="flex:1;" onclick="closeManualInput()">Batal</button>
+      <button class="setup-btn" style="flex:1;" onclick="submitManualScan()">Proses</button>
     </div>
   </div>
 </div>
@@ -796,6 +823,31 @@ document.addEventListener('visibilitychange', () => {
 // ══════════════════════════════════════════════════════════
 // QR SCANNER
 // ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// [F3] INPUT MANUAL NIS/NIG (kartu hilang/rusak)
+// ══════════════════════════════════════════════════════════
+function showManualInput() {
+  const input = document.getElementById('manual-id');
+  input.value = '';
+  document.getElementById('manual-overlay').style.display = 'flex';
+  setTimeout(() => input.focus(), 100);
+}
+
+function closeManualInput() {
+  document.getElementById('manual-overlay').style.display = 'none';
+}
+
+function submitManualScan() {
+  const tipe = document.getElementById('manual-tipe').value; // 'S' atau 'G'
+  const id   = document.getElementById('manual-id').value.trim();
+  if (!id) { showToast('Masukkan nomor induk terlebih dahulu'); return; }
+  closeManualInput();
+  // onQrSuccess() memproses string kode QR generik — cocok dipakai ulang di
+  // sini tanpa perlu refactor, jalur kamera dan manual jadi identik persis
+  // (cooldown, preview instan dari indeks lokal, antrean offline, dst).
+  onQrSuccess((tipe === 'S' ? 'MTS-S-' : 'MTS-G-') + id);
+}
+
 function startScanner() {
   html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
 
